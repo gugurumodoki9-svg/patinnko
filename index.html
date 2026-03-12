@@ -4,16 +4,6 @@
 <meta charset="UTF-8" />
 
 <style id="webmakerstyle">
-
-</style>
-</head>
-<body>
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8" />
-
-<style id="webmakerstyle">
 body { background: #050505; color: white; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; margin: 0; }
 
 /* ログイン */
@@ -323,11 +313,14 @@ db.ref('system/settings').on('value', snap => {
     }
 });
 
+// グローバル変数（Firebaseリスナーからアクセスできるよう外に出す）
+let money, balls, inventory, ownedItems, equippedTool, activeSkin;
+let stock, isSpinning, isKakuhen, currentUser = null;
+let totalSpent, comboCount, totalShots;
+let debt;
+
 window.onload = function() {
-    let money, balls, inventory, ownedItems, equippedTool, activeSkin;
-    let stock, isSpinning, isKakuhen, currentUser = null;
-    let totalSpent, comboCount, totalShots;
-    let debt; // 借金残高
+    init(); // 最初にlocalStorageからデータ読み込み
 
     const ITEM_LIST = {
         tools: [
@@ -369,7 +362,7 @@ window.onload = function() {
         }
         stock = 0; isSpinning = false; isKakuhen = false;
     }
-    init();
+;
 
     const canvas = document.getElementById('pachinkoCanvas');
     const ctx = canvas.getContext('2d');
@@ -392,6 +385,8 @@ window.onload = function() {
 
     function onLoginSuccess(user) {
         currentUser = user;
+        window._updateUI = updateUI;
+        window.showToast = showToast; // ギフト通知用にグローバル登録
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('pachinko-container').style.display = 'flex';
         document.getElementById('news-bar').style.display = 'flex';
@@ -407,7 +402,8 @@ window.onload = function() {
             }, 1000);
         }
 
-        updateRanking(); listenGifts(); updateUI(); draw();
+        updateUI(); listenGifts(); draw();
+        setTimeout(() => updateRanking(), 500); // UIがdbに書いてからランキング取得
         window.startNewsTicker();
     }
 
@@ -422,11 +418,11 @@ window.onload = function() {
     };
 
     function updateRanking() {
-        db.ref('users').orderByChild('money').limitToLast(10).on('value', snap => {
+        db.ref('users').orderByChild('money').limitToLast(5).on('value', snap => {
             const list = document.getElementById('ranking-list');
             list.innerHTML = "";
             let arr = []; snap.forEach(s => arr.push(s.val()));
-            arr.reverse().forEach((u, i) => {
+            arr.reverse().slice(0, 5).forEach((u, i) => {
                 list.innerHTML += `<div class="rank-item"><span>${i+1}. ${u.name}</span><span>$${u.money.toLocaleString()}</span></div>`;
             });
         });
@@ -523,22 +519,42 @@ window.onload = function() {
     };
 
     function listenGifts() {
+        let firstLoad = true;
         db.ref('gifts/' + currentUser.uid).on('value', snap => {
             const list = document.getElementById('gift-list');
-            list.innerHTML = snap.exists() ? "" : "ギフトなし";
+            list.innerHTML = "";
+            let count = 0;
             snap.forEach(g => {
                 const d = g.val();
-                const b = document.createElement('button');
-                b.className = "buy-btn"; b.innerText = `🎁 $${d.money} + ${d.balls}玉`;
-                b.onclick = () => { money += d.money; balls += d.balls; db.ref('gifts/'+currentUser.uid+'/'+g.key).remove(); updateUI(); };
-                list.appendChild(b);
+                if(!d || (!d.money && !d.balls)) return;
+                count++;
+                const btn = document.createElement('button');
+                btn.className = "buy-btn";
+                btn.innerText = `🎁 $${(d.money||0).toLocaleString()} + ${d.balls||0}玉 受け取る`;
+                btn.onclick = () => {
+                    money += (d.money || 0);
+                    balls += (d.balls || 0);
+                    db.ref('gifts/' + currentUser.uid + '/' + g.key).remove();
+                    showToast(`🎁 $${(d.money||0).toLocaleString()} + ${d.balls||0}玉 受け取った！`, '#9400d3', 2500);
+                    updateUI();
+                };
+                list.appendChild(btn);
             });
+            if(count === 0) {
+                list.innerHTML = '<div style="color:#555;font-size:12px;padding:8px;">ギフトなし</div>';
+            } else if(!firstLoad) {
+                // 新着ギフト通知
+                showToast(`🎁 新しいギフトが ${count}件 届いた！`, '#9400d3', 3000);
+            }
+            firstLoad = false;
         });
     }
 
     function updateUI() {
         document.getElementById('money').innerText = money.toLocaleString();
         document.getElementById('balls').innerText = balls;
+        const luckEl = document.getElementById('luck-multi-display');
+        if(luckEl) luckEl.innerText = `LUCK x${window.G_LUCK_MULTI || 1}`;
         const debtEl = document.getElementById('debt-display');
         if(debtEl) { debtEl.innerText = debt > 0 ? `💀 借金 $${debt.toLocaleString()}` : ''; debtEl.style.display = debt > 0 ? 'block' : 'none'; }
         const debtPanel = document.getElementById('debt-panel-amount');
@@ -803,9 +819,5 @@ window.onload = function() {
 };
 //# sourceURL=userscript.js
 </script>
-</body>
-</html>
-
-
 </body>
 </html>
