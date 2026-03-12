@@ -318,6 +318,7 @@ let money, balls, inventory, ownedItems, equippedTool, activeSkin;
 let stock, isSpinning, isKakuhen, currentUser = null;
 let totalSpent, comboCount, totalShots;
 let debt;
+let loanBalls;
 
 window.onload = function() {
     init(); // 最初にlocalStorageからデータ読み込み
@@ -346,7 +347,7 @@ window.onload = function() {
             money = 1000; balls = 100;
             inventory = { bronze: 0, silver: 0, gold: 0 };
             ownedItems = ['s-def']; activeSkin = 's-def'; equippedTool = null;
-            totalSpent = 0; comboCount = 0; totalShots = 0; debt = 0;
+            totalSpent = 0; comboCount = 0; totalShots = 0; debt = 0; loanBalls = 0;
             localStorage.clear();
         } else {
             money = parseInt(localStorage.getItem('p_money')) || 1000;
@@ -359,6 +360,7 @@ window.onload = function() {
             comboCount = parseInt(localStorage.getItem('p_combo')) || 0;
             totalShots = parseInt(localStorage.getItem('p_shots')) || 0;
             debt       = parseInt(localStorage.getItem('p_debt'))  || 0;
+            loanBalls  = parseInt(localStorage.getItem('p_loan_balls')) || 0;
         }
         stock = 0; isSpinning = false; isKakuhen = false;
     }
@@ -396,6 +398,7 @@ window.onload = function() {
             const interest = Math.floor(debt * 0.10);
             debt += interest;
             localStorage.setItem('p_debt', debt);
+        localStorage.setItem('p_loan_balls', loanBalls);
             setTimeout(() => {
                 showToast(`💀 利息 +$${interest.toLocaleString()} 加算！ 借金総額: $${debt.toLocaleString()}`, '#f44', 3000);
                 updateUI();
@@ -628,6 +631,7 @@ window.onload = function() {
         localStorage.setItem('p_spent', totalSpent);
         localStorage.setItem('p_shots', totalShots);
         localStorage.setItem('p_debt', debt);
+        localStorage.setItem('p_loan_balls', loanBalls);
         localStorage.setItem('p_owned', JSON.stringify(ownedItems));
         localStorage.setItem('p_skin', activeSkin);
         localStorage.setItem('p_tool', equippedTool || "");
@@ -673,8 +677,23 @@ window.onload = function() {
         if(!all && (isNaN(amt) || amt <= 0)) return alert("返済額を入れてくれ");
         if(money < amt) return alert("所持金が足りない！");
         const actual = Math.min(amt, debt);
+        const debtBefore = debt;
         money -= actual; debt -= actual;
-        showToast(`✅ $${actual.toLocaleString()} 返済完了！残債: $${debt.toLocaleString()}`, '#0f0', 2500);
+        // 返済比率に応じて融資で得た玉を回収
+        if(loanBalls > 0 && debtBefore > 0) {
+            const ratio = actual / debtBefore;
+            const reclaimBalls = Math.ceil(loanBalls * ratio);
+            const actualReclaim = Math.min(reclaimBalls, balls, loanBalls);
+            balls -= actualReclaim;
+            loanBalls -= actualReclaim;
+            if(actualReclaim > 0) {
+                showToast(`✅ $${actual.toLocaleString()} 返済完了！ -${actualReclaim}玉回収 残債: $${debt.toLocaleString()}`, '#0f0', 2500);
+            } else {
+                showToast(`✅ $${actual.toLocaleString()} 返済完了！残債: $${debt.toLocaleString()}`, '#0f0', 2500);
+            }
+        } else {
+            showToast(`✅ $${actual.toLocaleString()} 返済完了！残債: $${debt.toLocaleString()}`, '#0f0', 2500);
+        }
         updateUI();
     };
 
@@ -693,7 +712,7 @@ window.onload = function() {
         const l = LOAN_LIST.find(x => x.id === id);
         if(!l) return;
         if(!confirm(`${l.name}\n借入額: $${l.amount.toLocaleString()}\n玉: +${l.balls.toLocaleString()}発\n利息: ログインのたびに10%加算\n\n借りますか？`)) return;
-        money += l.amount; debt += l.amount; balls += l.balls;
+        money += l.amount; debt += l.amount; balls += l.balls; loanBalls += l.balls;
         showToast(`💸 $${l.amount.toLocaleString()} 借入完了！ +${l.balls}玉`, '#f90', 2000);
         updateUI();
     };
