@@ -652,10 +652,10 @@ window.onload = function() {
 
     // 融資プラン（借りると毎ログイン10%利息）
     const LOAN_LIST = [
-        {id:'l-sm',  name:'⚡ 小口融資', amount:10000,  balls:200,  rate:0.10, desc:'$10,000借りて玉200発 / 利息10%/ログイン'},
-        {id:'l-md',  name:'💵 中口融資', amount:100000, balls:1000, rate:0.10, desc:'$100,000借りて玉1,000発 / 利息10%/ログイン'},
-        {id:'l-lg',  name:'💰 大口融資', amount:1000000,balls:5000, rate:0.10, desc:'$1,000,000借りて玉5,000発 / 利息10%/ログイン'},
-        {id:'l-vip', name:'👑 VIP融資',  amount:10000000,balls:20000,rate:0.10,desc:'$10,000,000借りて玉20,000発 / 利息10%/ログイン'},
+        {id:'l-sm',  name:'⚡ 小口融資', amount:10000,   desc:'$10,000借入 / 利息10%/ログイン'},
+        {id:'l-md',  name:'💵 中口融資', amount:100000,  desc:'$100,000借入 / 利息10%/ログイン'},
+        {id:'l-lg',  name:'💰 大口融資', amount:1000000, desc:'$1,000,000借入 / 利息10%/ログイン'},
+        {id:'l-vip', name:'👑 VIP融資',  amount:10000000,desc:'$10,000,000借入 / 利息10%/ログイン'},
     ];
 
     function renderLoans() {
@@ -677,23 +677,8 @@ window.onload = function() {
         if(!all && (isNaN(amt) || amt <= 0)) return alert("返済額を入れてくれ");
         if(money < amt) return alert("所持金が足りない！");
         const actual = Math.min(amt, debt);
-        const debtBefore = debt;
         money -= actual; debt -= actual;
-        // 返済比率に応じて融資で得た玉を回収
-        if(loanBalls > 0 && debtBefore > 0) {
-            const ratio = actual / debtBefore;
-            const reclaimBalls = Math.ceil(loanBalls * ratio);
-            const actualReclaim = Math.min(reclaimBalls, balls, loanBalls);
-            balls -= actualReclaim;
-            loanBalls -= actualReclaim;
-            if(actualReclaim > 0) {
-                showToast(`✅ $${actual.toLocaleString()} 返済完了！ -${actualReclaim}玉回収 残債: $${debt.toLocaleString()}`, '#0f0', 2500);
-            } else {
-                showToast(`✅ $${actual.toLocaleString()} 返済完了！残債: $${debt.toLocaleString()}`, '#0f0', 2500);
-            }
-        } else {
-            showToast(`✅ $${actual.toLocaleString()} 返済完了！残債: $${debt.toLocaleString()}`, '#0f0', 2500);
-        }
+        showToast(`✅ $${actual.toLocaleString()} 返済完了！残債: $${debt.toLocaleString()}`, '#0f0', 2500);
         updateUI();
     };
 
@@ -711,9 +696,9 @@ window.onload = function() {
     window.takeLoan = (id) => {
         const l = LOAN_LIST.find(x => x.id === id);
         if(!l) return;
-        if(!confirm(`${l.name}\n借入額: $${l.amount.toLocaleString()}\n玉: +${l.balls.toLocaleString()}発\n利息: ログインのたびに10%加算\n\n借りますか？`)) return;
-        money += l.amount; debt += l.amount; balls += l.balls; loanBalls += l.balls;
-        showToast(`💸 $${l.amount.toLocaleString()} 借入完了！ +${l.balls}玉`, '#f90', 2000);
+        if(!confirm(`${l.name}\n借入額: $${l.amount.toLocaleString()}\n利息: ログインのたびに10%加算\n\n借りますか？`)) return;
+        money += l.amount; debt += l.amount;
+        showToast(`💸 $${l.amount.toLocaleString()} 借入完了！`, '#f90', 2000);
         updateUI();
     };
 
