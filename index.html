@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>パチンコ【THE FINAL】</title>
+<title>超インフレ・パチンコ【THE FINAL】</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎰</text></svg>">
 <style>
 * { box-sizing: border-box; }
@@ -356,7 +356,7 @@ let G = {
 const ITEMS = {
     tools: [
         {id:'t-auto',    name:'🔫 自動連射機', price:5000,      desc:'自動で連続発射'},
-        {id:'t-magnet',  name:'🧲 磁力チャッカー', price:50000,   desc:'チャッカー入賞率UP'},
+        {id:'t-magnet',  name:'🧲 磁力チャッカー', price:50000,   desc:'キャッチャー幅2倍（紫色）'},
         {id:'t-twin',    name:'⚔️ ツイン発射', price:500000,    desc:'2発同時発射'},
         {id:'t-triple',  name:'🔱 ストックMAX', price:2000000,  desc:'ストック上限4→8に拡張'},
         {id:'t-gravity', name:'🌌 重力崩壊', price:10000000, desc:'金景品の換金額が3倍'}
@@ -646,8 +646,10 @@ function draw() {
         ctx.fillStyle = p.type==='rail' ? '#444' : skin.pin;
         ctx.beginPath(); ctx.arc(p.x,p.y,p.type==='rail'?1.2:2,0,7); ctx.fill();
     });
+    const catcherW = equippedTool==='t-magnet' ? 60 : 30;
     const cX = 135 + Math.sin(Date.now()/500)*60;
-    ctx.strokeStyle = '#0ff'; ctx.strokeRect(cX,315,30,15);
+    ctx.strokeStyle = equippedTool==='t-magnet' ? '#f0f' : '#0ff';
+    ctx.strokeRect(cX,315,catcherW,15);
     for (let i=0; i<activeBalls.length; i++) {
         let b = activeBalls[i];
         b.vy += 0.22; b.x += b.vx; b.y += b.vy;
@@ -656,7 +658,7 @@ function draw() {
             if (d<7) { const a=Math.atan2(dy,dx); b.vx=Math.cos(a)*1.8; b.vy=Math.sin(a)*1.8; }
         });
         outHoles.forEach(h => { if(b.x>h.x&&b.x<h.x+h.w&&b.y>h.y&&b.y<h.y+h.h){activeBalls.splice(i,1);i--;} });
-        if (b && b.y>315 && b.x>cX && b.x<cX+30) {
+        if (b && b.y>315 && b.x>cX && b.x<cX+catcherW) {
             activeBalls.splice(i,1); i--;
             const stockMax = equippedTool==='t-triple' ? 8 : 4;
             if (stock<stockMax) { stock++; updateUI(); startSlot(); }
