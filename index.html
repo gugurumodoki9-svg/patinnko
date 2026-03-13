@@ -334,8 +334,6 @@ async function initFirebase() {
     db   = firebase.database();
     initApp();
 }
-// DOMロード後すぐボタンをバインド（Firebase待ち不要）
-document.addEventListener('DOMContentLoaded', () => bindButtons());
 initFirebase();
 
 // ===== グローバル状態 =====
@@ -1022,6 +1020,8 @@ function softReset() {
     if (!confirm('全リセットするぜ？')) return;
     initData(true); updateUI();
 }
+// ボタンバインド（全関数定義後に実行）
+bindButtons();
 </script>
 </body>
 </html>
