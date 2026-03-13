@@ -332,7 +332,7 @@ async function initFirebase() {
     firebase.initializeApp(firebaseConfig);
     auth = firebase.auth();
     db   = firebase.database();
-    startApp();
+    initApp();
 }
 initFirebase();
 
@@ -403,8 +403,7 @@ const MISSIONS = [
 ];
 
 // ===== アプリ起動（Firebase準備完了後） =====
-function startApp() {
-bindButtons();
+function initApp() {
 
 // ===== Firebase リアルタイムリスナー =====
 // 設定（配当・ラックマルチ）
@@ -947,7 +946,7 @@ function toast(msg, color = '#0ff', dur = 2000) {
     setTimeout(() => t.remove(), dur);
 }
 
-} // end startApp()
+
 
 // ===== ゲームアクション（グローバル） =====
 function buyBalls() {
