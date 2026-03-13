@@ -334,6 +334,8 @@ async function initFirebase() {
     db   = firebase.database();
     initApp();
 }
+// DOMロード後すぐボタンをバインド（Firebase待ち不要）
+document.addEventListener('DOMContentLoaded', () => bindButtons());
 initFirebase();
 
 // ===== グローバル状態 =====
