@@ -3,9 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>超インフレ・パチンコ【THE FINAL】</title>
-<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+
 <style>
 * { box-sizing: border-box; }
 body { background:#050505; color:#fff; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; padding:20px; margin:0; min-height:100vh; }
@@ -83,6 +81,7 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
 .btn-gift { background:#9400d3; color:#fff; }
 .btn-admin { background:#ffd700; color:#000; }
 .btn-reset { background:#400; color:#f66; font-size:10px; flex:0.5 !important; }
+.btn-ad { background:#0a0; color:#fff; }
 
 /* ニュースバー */
 #news-bar { display:none; width:100%; background:#000; border:2px solid #0ff; border-radius:8px; align-items:center; overflow:hidden; box-shadow:0 0 10px rgba(0,255,255,0.2); }
@@ -104,9 +103,9 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
 /* 管理者パネル */
 .adm-section { border:1px solid #444; border-radius:6px; padding:10px; margin-bottom:10px; text-align:left; }
 .adm-section-title { font-size:10px; color:#0ff; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; padding-bottom:4px; border-bottom:1px solid #333; text-align:center; }
-.adm-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px; }
-.adm-grid label { font-size:9px; color:#aaa; display:flex; flex-direction:column; gap:2px; }
-.adm-grid input { background:#111; border:1px solid #444; color:#fff; padding:5px; border-radius:3px; font-size:11px; }
+.adm-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px; width:100%; box-sizing:border-box; }
+.adm-grid label { font-size:9px; color:#aaa; display:flex; flex-direction:column; gap:2px; min-width:0; }
+.adm-grid input { background:#111; border:1px solid #444; color:#fff; padding:5px; border-radius:3px; font-size:11px; width:100%; box-sizing:border-box; min-width:0; }
 .adm-btn { width:100%; border:none; border-radius:4px; padding:8px; font-weight:bold; cursor:pointer; margin-top:4px; }
 </style>
 </head>
@@ -139,7 +138,7 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
             <div id="stock-lamps">○○○○</div>
             <div id="controls">
                 <button id="shootBtn">玉を発射</button>
-                <button class="buy-btn" onclick="buyBalls()">玉を購入 ($150)</button>
+                <button class="buy-btn" id="btn-buy-balls">玉を購入 ($150)</button>
             </div>
             <div id="stats">
                 <div>💰 $<span id="money-display">0</span></div>
@@ -155,9 +154,9 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
                 </div>
                 <div id="debt-panel-controls">
                     <input type="number" id="loan-input" placeholder="金額を入力...">
-                    <button onclick="takeCustomLoan()" style="background:#f90;color:#000;">借りる</button>
-                    <button onclick="repayDebt(false)" style="background:#f44;color:#fff;">返済</button>
-                    <button onclick="repayDebt(true)" style="background:#900;color:#fff;">全額</button>
+                    <button id="btn-custom-loan" style="background:#f90;color:#000;">借りる</button>
+                    <button id="btn-repay" style="background:#f44;color:#fff;">返済</button>
+                    <button id="btn-repay-all" style="background:#900;color:#fff;">全額</button>
                 </div>
             </div>
         </div>
@@ -190,9 +189,9 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
                     <div class="panel-section">
                         <h2 class="panel-title" style="color:#ffd700;">💱 換金所</h2>
                         <div id="prize-exchange-area">
-                            <button class="ex-btn bronze" onclick="exchangeSingle('bronze')">銅<br><span id="p-bronze">0</span></button>
-                            <button class="ex-btn silver" onclick="exchangeSingle('silver')">銀<br><span id="p-silver">0</span></button>
-                            <button class="ex-btn gold" onclick="exchangeSingle('gold')">金<br><span id="p-gold">0</span></button>
+                            <button class="ex-btn bronze" id="btn-ex-bronze">銅<br><span id="p-bronze">0</span></button>
+                            <button class="ex-btn silver" id="btn-ex-silver">銀<br><span id="p-silver">0</span></button>
+                            <button class="ex-btn gold" id="btn-ex-gold">金<br><span id="p-gold">0</span></button>
                         </div>
                     </div>
                     <div class="panel-section">
@@ -200,9 +199,10 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
                         <div id="mission-list" class="list-container mission-box"></div>
                     </div>
                     <div class="bottom-btns">
-                        <button class="btn-gift" onclick="openModal('gift-modal')">🎁 ギフト</button>
-                        <button class="btn-admin" onclick="openModal('admin-modal')">🔧 管理</button>
-                        <button class="btn-reset" onclick="softReset()">リセット</button>
+                        <button class="btn-gift" id="btn-gift">🎁 ギフト</button>
+                        <button class="btn-ad" id="btn-ad">📺 広告</button>
+                        <button class="btn-admin" id="btn-admin">🔧 管理</button>
+                        <button class="btn-reset" id="btn-reset">リセット</button>
                     </div>
                 </div>
             </div>
@@ -224,17 +224,36 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
     <div class="modal-content">
         <h3>🎁 ギフト</h3>
         <div id="gift-list"></div>
-        <button class="styled-button close-btn" onclick="closeModal('gift-modal')">閉じる</button>
+        <button class="styled-button close-btn" id="btn-close-gift">閉じる</button>
     </div>
 </div>
 
+
+<!-- 広告報酬モーダル -->
+<div id="ad-modal" class="modal">
+    <div class="modal-content">
+        <h3>📺 広告報酬</h3>
+        <p style="font-size:11px;color:#888;" id="ad-timer-label">動画を最後まで見ると報酬ゲット！</p>
+        <div id="ad-screen" style="background:#000;border:2px solid #0a0;border-radius:8px;padding:20px;margin:10px 0;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
+            <div id="ad-content" style="font-size:32px;">📺</div>
+            <div id="ad-progress-wrap" style="width:100%;background:#111;border-radius:4px;height:8px;display:none;">
+                <div id="ad-progress-bar" style="height:8px;background:#0a0;border-radius:4px;width:0%;transition:width 0.1s;"></div>
+            </div>
+            <div id="ad-countdown" style="font-size:13px;color:#0a0;font-weight:bold;"></div>
+        </div>
+        <div id="ad-reward-info" style="font-size:12px;color:#ff0;margin-bottom:8px;">報酬: $<span id="ad-reward-amount">0</span> + <span id="ad-reward-balls">0</span>玉</div>
+        <div id="ad-limit-info" style="font-size:10px;color:#666;margin-bottom:8px;">本日残り <span id="ad-remaining">0</span>回</div>
+        <button id="ad-watch-btn" class="styled-button" style="background:#0a0;color:#fff;width:100%;">▶ 視聴開始</button>
+        <button class="styled-button close-btn" id="btn-close-ad">閉じる</button>
+    </div>
+</div>
 <!-- 管理者モーダル -->
 <div id="admin-modal" class="modal">
     <div class="modal-content admin-content">
         <h3>🔧 管理者パネル</h3>
         <div id="admin-auth-area">
             <input type="password" id="admin-pw" class="styled-input" placeholder="管理者コード">
-            <button class="styled-button" style="background:#fff;color:#000;width:100%;" onclick="authAdmin()">認証</button>
+            <button class="styled-button" id="btn-auth-admin" style="background:#fff;color:#000;width:100%;">認証</button>
         </div>
         <div id="admin-panel-ui" style="display:none; margin-top:10px;">
             <!-- デバッグ -->
@@ -242,22 +261,22 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
                 <div class="adm-section-title">🔧 デバッグ（自分のみ）</div>
                 <input type="number" id="adm-money" class="styled-input" placeholder="所持金を上書き">
                 <input type="number" id="adm-balls" class="styled-input" placeholder="玉数を上書き">
-                <button class="adm-btn" style="background:#555;color:#fff;" onclick="applyAdminSelf()">上書き</button>
+                <button class="adm-btn" id="btn-adm-self" style="background:#555;color:#fff;">上書き</button>
             </div>
             <!-- 一斉配布 -->
             <div class="adm-section">
                 <div class="adm-section-title">💰 一斉配布</div>
                 <input type="number" id="adm-dist-money" class="styled-input" placeholder="配布金額">
                 <input type="number" id="adm-dist-balls" class="styled-input" placeholder="配布玉数">
-                <button class="adm-btn" style="background:#9400d3;color:#fff;" onclick="distributeGift()">全員に配布</button>
+                <button class="adm-btn" id="btn-adm-dist" style="background:#9400d3;color:#fff;">全員に配布</button>
             </div>
             <!-- ニュース -->
             <div class="adm-section">
                 <div class="adm-section-title">📡 ニュース投稿</div>
                 <textarea id="adm-news-input" class="styled-input" placeholder="ニュース内容..." style="height:50px;resize:none;width:90%;"></textarea>
                 <div style="display:flex;gap:5px;">
-                    <button class="adm-btn" style="background:#0ff;color:#000;flex:1;" onclick="postNews()">投稿</button>
-                    <button class="adm-btn" style="background:#333;color:#fff;flex:0.5;" onclick="clearNews()">全消去</button>
+                    <button class="adm-btn" id="btn-adm-news" style="background:#0ff;color:#000;flex:1;">投稿</button>
+                    <button class="adm-btn" id="btn-adm-clear" style="background:#333;color:#fff;flex:0.5;">全消去</button>
                 </div>
             </div>
             <!-- 配当変更 -->
@@ -270,21 +289,21 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
                     <label>銀換金額($)<input type="number" id="adm-silver-rate" value="500"></label>
                     <label>金換金額($)<input type="number" id="adm-gold-rate" value="2000"></label>
                 </div>
-                <button class="adm-btn" style="background:#ffd700;color:#000;" onclick="applyPayouts()">全員に反映</button>
+                <button class="adm-btn" id="btn-adm-payouts" style="background:#ffd700;color:#000;">全員に反映</button>
             </div>
             <!-- ラックマルチ -->
             <div class="adm-section">
                 <div class="adm-section-title">🍀 ラックマルチ</div>
                 <input type="number" id="adm-luck-multi" value="1" step="0.1" min="0" class="styled-input" style="color:#a0f;font-size:16px;font-weight:bold;text-align:center;">
-                <button class="adm-btn" style="background:#a0f;color:#fff;" onclick="applyLuckMulti()">全員に反映</button>
+                <button class="adm-btn" id="btn-adm-luck" style="background:#a0f;color:#fff;">全員に反映</button>
             </div>
         </div>
-        <button class="styled-button close-btn" onclick="closeModal('admin-modal')">閉じる</button>
+        <button class="styled-button close-btn" id="btn-close-admin">閉じる</button>
     </div>
 </div>
 
 <script>
-// ===== Firebase初期化 =====
+// ===== Firebase動的ロード =====
 const firebaseConfig = {
     apiKey: "AIzaSyA10j1O95LaPI_QrfqdalapIomXmzXRCms",
     authDomain: "patinnko2.firebaseapp.com",
@@ -294,9 +313,27 @@ const firebaseConfig = {
     messagingSenderId: "1084492073320",
     appId: "1:1084492073320:web:f6430e8a6fa1300c8c6edd"
 };
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db   = firebase.database();
+
+let auth, db;
+
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src; s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+    });
+}
+
+async function initFirebase() {
+    await loadScript('https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js');
+    await loadScript('https://www.gstatic.com/firebasejs/9.1.3/firebase-auth-compat.js');
+    await loadScript('https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js');
+    firebase.initializeApp(firebaseConfig);
+    auth = firebase.auth();
+    db   = firebase.database();
+    startApp();
+}
+initFirebase();
 
 // ===== グローバル状態 =====
 let money, balls, inventory, ownedItems, equippedTool, activeSkin;
@@ -364,6 +401,10 @@ const MISSIONS = [
     {id:'m20', n:'究極コレクター: 全スキン所持', c:()=>ownedItems.filter(i=>i.startsWith('s-')).length>=7, rm:1000000, rb:2000},
 ];
 
+// ===== アプリ起動（Firebase準備完了後） =====
+function startApp() {
+bindButtons();
+
 // ===== Firebase リアルタイムリスナー =====
 // 設定（配当・ラックマルチ）
 db.ref('system/settings').on('value', snap => {
@@ -411,9 +452,7 @@ function initData(reset = false) {
 auth.onAuthStateChanged(user => {
     if (user) onLogin(user);
 });
-document.getElementById('google-login-btn').onclick = () => {
-    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(r => onLogin(r.user));
-};
+// google-login-btn は bindButtons() でバインド済み
 
 function onLogin(user) {
     currentUser = user;
@@ -485,7 +524,7 @@ function renderShop(targetId, list, type) {
     document.getElementById(targetId).innerHTML = list.map(item => {
         const owned    = ownedItems.includes(item.id);
         const equipped = (type === 't' && equippedTool === item.id) || (type === 's' && activeSkin === item.id);
-        return `<div class="shop-item ${equipped ? 'equipped' : ''}" onclick="itemAction('${item.id}',${item.price},'${type}')">
+        return `<div class="shop-item ${equipped ? 'equipped' : ''}">
             <span>${item.name}</span>
             <span>${owned ? (equipped ? '装備中' : '所有') : '$' + item.price.toLocaleString()}</span>
         </div>`;
@@ -494,7 +533,7 @@ function renderShop(targetId, list, type) {
 
 function renderLoans() {
     document.getElementById('shop-loans').innerHTML = ITEMS.loans.map(l =>
-        `<div class="shop-item" onclick="takeLoan('${l.id}')">
+        `<div class="shop-item">
             <div><div>${l.name}</div><div class="shop-item-desc">${l.desc}</div></div>
             <span style="color:#f90;">借りる</span>
         </div>`
@@ -512,7 +551,7 @@ function renderMissions() {
         return `<div class="mission-item ${cls}">
             <span>${icon} ${m.n}</span>
             <span class="mission-reward">$${m.rm.toLocaleString()} + ${m.rb}玉</span>
-            ${claimable ? `<button class="claim-btn" onclick="claimMission('${m.id}',${m.rm},${m.rb})">受け取る</button>` : ''}
+            ${claimable ? `<button class="claim-btn">受け取る</button>` : ''}
         </div>`;
     }).join('');
 }
@@ -824,6 +863,114 @@ function openModal(id) {
 }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
+
+// ===== 広告報酬システム =====
+const AD_CONFIG = [
+    { reward_money: 5000,    reward_balls: 50,   duration: 15 },
+    { reward_money: 20000,   reward_balls: 100,  duration: 20 },
+    { reward_money: 100000,  reward_balls: 200,  duration: 25 },
+    { reward_money: 500000,  reward_balls: 500,  duration: 30 },
+];
+const AD_DAILY_LIMIT = 5;
+const AD_EMOJIS = ['🚀','💊','🏖️','🎮','🍕','⚽','🎸','🌈','🦁','💡'];
+
+function getAdData() {
+    const today = new Date().toDateString();
+    const raw = JSON.parse(localStorage.getItem('p_ad_data') || '{}');
+    if (raw.date !== today) return { date: today, count: 0 };
+    return raw;
+}
+
+function watchAd() {
+    const adData = getAdData();
+    const remaining = AD_DAILY_LIMIT - adData.count;
+    const tier = Math.min(Math.floor(adData.count), AD_CONFIG.length - 1);
+    const cfg = AD_CONFIG[tier];
+
+    document.getElementById('ad-reward-amount').innerText = cfg.reward_money.toLocaleString();
+    document.getElementById('ad-reward-balls').innerText  = cfg.reward_balls;
+    document.getElementById('ad-remaining').innerText     = remaining;
+    document.getElementById('ad-countdown').innerText     = '';
+    document.getElementById('ad-progress-wrap').style.display = 'none';
+    document.getElementById('ad-progress-bar').style.width    = '0%';
+    document.getElementById('ad-watch-btn').disabled = remaining <= 0;
+    document.getElementById('ad-watch-btn').innerText = remaining > 0 ? '▶ 視聴開始' : '本日の上限に達した';
+    document.getElementById('ad-timer-label').innerText = remaining > 0
+        ? `動画を最後まで見ると報酬ゲット！（${cfg.duration}秒）`
+        : '明日また見てね！';
+    document.getElementById('ad-content').innerText = '📺';
+    document.getElementById('ad-modal').style.display = 'flex';
+}
+
+let adTimer = null;
+function startAdWatch() {
+    const adData = getAdData();
+    if (AD_DAILY_LIMIT - adData.count <= 0) return;
+    const tier = Math.min(adData.count, AD_CONFIG.length - 1);
+    const cfg = AD_CONFIG[tier];
+
+    document.getElementById('ad-watch-btn').disabled = true;
+    document.getElementById('ad-progress-wrap').style.display = 'block';
+
+    let elapsed = 0;
+    const total = cfg.duration;
+    adTimer = setInterval(() => {
+        elapsed++;
+        const pct = (elapsed / total) * 100;
+        document.getElementById('ad-progress-bar').style.width = pct + '%';
+        document.getElementById('ad-countdown').innerText = `残り ${total - elapsed}秒`;
+        document.getElementById('ad-content').innerText = AD_EMOJIS[elapsed % AD_EMOJIS.length];
+
+        if (elapsed >= total) {
+            clearInterval(adTimer);
+            // 報酬付与
+            money += cfg.reward_money;
+            balls += cfg.reward_balls;
+            adData.count++;
+            localStorage.setItem('p_ad_data', JSON.stringify(adData));
+            document.getElementById('ad-content').innerText = '🎉';
+            document.getElementById('ad-countdown').innerText = '視聴完了！';
+            toast(`📺 広告報酬！ +$${cfg.reward_money.toLocaleString()} +${cfg.reward_balls}玉`, '#0a0', 3000);
+            updateUI();
+            setTimeout(() => closeAdModal(), 1500);
+        }
+    }, 1000);
+}
+
+function closeAdModal() {
+    if (adTimer) { clearInterval(adTimer); adTimer = null; }
+    document.getElementById('ad-modal').style.display = 'none';
+}
+
+
+// ===== ボタンバインド =====
+function bindButtons() {
+    const b = (id, fn) => { const el = document.getElementById(id); if(el) el.addEventListener('click', fn); };
+    b('btn-buy-balls',    () => buyBalls());
+    b('btn-custom-loan',  () => takeCustomLoan());
+    b('btn-repay',        () => repayDebt(false));
+    b('btn-repay-all',    () => repayDebt(true));
+    b('btn-ex-bronze',    () => exchangeSingle('bronze'));
+    b('btn-ex-silver',    () => exchangeSingle('silver'));
+    b('btn-ex-gold',      () => exchangeSingle('gold'));
+    b('btn-gift',         () => openModal('gift-modal'));
+    b('btn-ad',           () => watchAd());
+    b('btn-admin',        () => openModal('admin-modal'));
+    b('btn-reset',        () => softReset());
+    b('btn-close-gift',   () => closeModal('gift-modal'));
+    b('ad-watch-btn',     () => startAdWatch());
+    b('btn-close-ad',     () => closeAdModal());
+    b('btn-auth-admin',   () => authAdmin());
+    b('btn-adm-self',     () => applyAdminSelf());
+    b('btn-adm-dist',     () => distributeGift());
+    b('btn-adm-news',     () => postNews());
+    b('btn-adm-clear',    () => clearNews());
+    b('btn-adm-payouts',  () => applyPayouts());
+    b('btn-adm-luck',     () => applyLuckMulti());
+    b('btn-close-admin',  () => closeModal('admin-modal'));
+    b('google-login-btn', () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(r => onLogin(r.user)));
+}
+
 // ===== トースト =====
 function toast(msg, color = '#0ff', dur = 2000) {
     const t = document.createElement('div');
@@ -832,6 +979,8 @@ function toast(msg, color = '#0ff', dur = 2000) {
     document.body.appendChild(t);
     setTimeout(() => t.remove(), dur);
 }
+
+} // end startApp()
 </script>
 </body>
 </html>
