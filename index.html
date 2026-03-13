@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>超インフレ・パチンコ【THE FINAL】</title>
+<title>パチンコ【THE FINAL】</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎰</text></svg>">
 <style>
 * { box-sizing: border-box; }
@@ -355,11 +355,11 @@ let G = {
 // ===== 定数 =====
 const ITEMS = {
     tools: [
-        {id:'t-auto',    name:'🔫 自動連射機', price:5000},
-        {id:'t-magnet',  name:'🧲 磁力チャッカー', price:50000},
-        {id:'t-twin',    name:'⚔️ ツイン発射', price:500000},
-        {id:'t-triple',  name:'🔱 トリプル射出', price:2000000},
-        {id:'t-gravity', name:'🌌 重力崩壊', price:10000000}
+        {id:'t-auto',    name:'🔫 自動連射機', price:5000,      desc:'自動で連続発射'},
+        {id:'t-magnet',  name:'🧲 磁力チャッカー', price:50000,   desc:'チャッカー入賞率UP'},
+        {id:'t-twin',    name:'⚔️ ツイン発射', price:500000,    desc:'2発同時発射'},
+        {id:'t-triple',  name:'🔱 ストックMAX', price:2000000,  desc:'ストック上限4→8に拡張'},
+        {id:'t-gravity', name:'🌌 重力崩壊', price:10000000, desc:'金景品の換金額が3倍'}
     ],
     skins: [
         {id:'s-def',    name:'📱 標準',  price:0,         bg:'#000', pin:'#ddd'},
@@ -496,7 +496,8 @@ function updateUI() {
     document.getElementById('money-display').innerText = money.toLocaleString();
     document.getElementById('balls-display').innerText = balls;
     document.getElementById('combo-count').innerText   = comboCount;
-    document.getElementById('stock-lamps').innerText   = '●'.repeat(stock) + '○'.repeat(4 - stock);
+    const stockMax = equippedTool==='t-triple' ? 8 : 4;
+    document.getElementById('stock-lamps').innerText   = '●'.repeat(stock) + '○'.repeat(stockMax - stock);
     document.getElementById('luck-multi-display').innerText = `LUCK x${G.luckMulti}`;
     document.getElementById('kakuhen-lamp').innerText  = isKakuhen ? '🔥 確変中 🔥' : '通常';
     document.getElementById('pachinko-machine').className = isKakuhen ? 'kakuhen-mode' : '';
@@ -524,8 +525,8 @@ function renderShop(targetId, list, type) {
     document.getElementById(targetId).innerHTML = list.map(item => {
         const owned    = ownedItems.includes(item.id);
         const equipped = (type === 't' && equippedTool === item.id) || (type === 's' && activeSkin === item.id);
-        return `<div class="shop-item ${equipped ? 'equipped' : ''}">
-            <span>${item.name}</span>
+        return `<div class="shop-item ${equipped ? 'equipped' : ''}" data-action="item" data-id="${item.id}" data-price="${item.price}" data-type="${type}">
+            <div><div>${item.name}</div>${item.desc ? `<div class="shop-item-desc">${item.desc}</div>` : ''}</div>
             <span>${owned ? (equipped ? '装備中' : '所有') : '$' + item.price.toLocaleString()}</span>
         </div>`;
     }).join('');
@@ -533,7 +534,7 @@ function renderShop(targetId, list, type) {
 
 function renderLoans() {
     document.getElementById('shop-loans').innerHTML = ITEMS.loans.map(l =>
-        `<div class="shop-item">
+        `<div class="shop-item" data-action="loan" data-id="${l.id}">
             <div><div>${l.name}</div><div class="shop-item-desc">${l.desc}</div></div>
             <span style="color:#f90;">借りる</span>
         </div>`
@@ -551,7 +552,7 @@ function renderMissions() {
         return `<div class="mission-item ${cls}">
             <span>${icon} ${m.n}</span>
             <span class="mission-reward">$${m.rm.toLocaleString()} + ${m.rb}玉</span>
-            ${claimable ? `<button class="claim-btn">受け取る</button>` : ''}
+            ${claimable ? `<button class="claim-btn" data-action="claim" data-id="${m.id}" data-rm="${m.rm}" data-rb="${m.rb}">受け取る</button>` : ''}
         </div>`;
     }).join('');
 }
@@ -626,7 +627,7 @@ function setupCanvas() {
 
     document.getElementById('shootBtn').onclick = () => {
         if (balls <= 0) return;
-        const cnt = equippedTool==='t-twin' ? 2 : equippedTool==='t-triple' ? 3 : equippedTool==='t-gravity' ? 5 : 1;
+        const cnt = equippedTool==='t-twin' ? 2 : 1;
         for (let i=0; i<cnt; i++) {
             if (balls > 0) { balls--; totalShots++; activeBalls.push({x:150+(Math.random()-0.5)*20, y:-10, vx:(Math.random()-0.5)*2, vy:2}); }
         }
@@ -657,7 +658,8 @@ function draw() {
         outHoles.forEach(h => { if(b.x>h.x&&b.x<h.x+h.w&&b.y>h.y&&b.y<h.y+h.h){activeBalls.splice(i,1);i--;} });
         if (b && b.y>315 && b.x>cX && b.x<cX+30) {
             activeBalls.splice(i,1); i--;
-            if (stock<4) { stock++; updateUI(); startSlot(); }
+            const stockMax = equippedTool==='t-triple' ? 8 : 4;
+            if (stock<stockMax) { stock++; updateUI(); startSlot(); }
         } else if (b && b.y>350) { activeBalls.splice(i,1); i--; }
         if (b) { ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(b.x,b.y,4,0,7); ctx.fill(); }
     }
@@ -713,74 +715,21 @@ function applyLuckBonus(base) {
 }
 
 // ===== ゲームアクション =====
-function buyBalls() {
-    if (money < 150) return;
-    money -= 150; totalSpent += 150; balls += 50; updateUI();
-}
 
-function exchangeSingle(type) {
-    const rate = type==='gold' ? G.goldRate : type==='silver' ? G.silverRate : 100;
-    if (inventory[type] <= 0) return;
-    money += inventory[type] * rate;
-    inventory[type] = 0;
-    updateUI();
-}
 
-function itemAction(id, price, type) {
-    if (!ownedItems.includes(id)) {
-        if (money < price) return;
-        money -= price; ownedItems.push(id);
-    } else {
-        if (type === 't') equippedTool = equippedTool===id ? null : id;
-        if (type === 's') activeSkin = id;
-    }
-    updateUI();
-}
 
-function claimMission(id, rm, rb) {
-    const claimed = JSON.parse(localStorage.getItem('p_m_claimed') || '[]');
-    if (claimed.includes(id)) return;
-    claimed.push(id);
-    localStorage.setItem('p_m_claimed', JSON.stringify(claimed));
-    money += rm; balls += rb;
-    toast(`🎁 $${rm.toLocaleString()} + ${rb}玉 GET!`, '#0f0');
-    updateUI();
-}
 
-function takeLoan(id) {
-    const l = ITEMS.loans.find(x => x.id === id);
-    if (!l) return;
-    if (!confirm(`${l.name}\n借入額: $${l.amount.toLocaleString()}\n利息: ログインのたびに10%加算\n\n借りますか？`)) return;
-    money += l.amount; debt += l.amount;
-    toast(`💸 $${l.amount.toLocaleString()} 借入完了！`, '#f90');
-    updateUI();
-}
 
-function takeCustomLoan() {
-    const amt = parseInt(document.getElementById('loan-input').value);
-    if (isNaN(amt) || amt <= 0) return alert('金額を入力してくれ');
-    if (!confirm(`$${amt.toLocaleString()} 借りますか？\n利息: ログインのたびに10%加算`)) return;
-    money += amt; debt += amt;
-    document.getElementById('loan-input').value = '';
-    toast(`💸 $${amt.toLocaleString()} 借入完了！`, '#f90');
-    updateUI();
-}
 
-function repayDebt(all = false) {
-    if (debt <= 0) return;
-    const amt = all ? debt : parseInt(document.getElementById('loan-input').value);
-    if (!all && (isNaN(amt) || amt <= 0)) return alert('返済額を入力してくれ');
-    if (money < amt) return alert('所持金が足りない！');
-    const actual = Math.min(amt, debt);
-    money -= actual; debt -= actual;
-    toast(`✅ $${actual.toLocaleString()} 返済！ 残債: $${debt.toLocaleString()}`, '#0f0', 2500);
-    updateUI();
-}
 
-function softReset() {
-    if (!confirm('全リセットするぜ？')) return;
-    initData(true); updateUI();
-}
+
+
+
+
+
+
+
+
 
 // ===== 管理者機能 =====
 function authAdmin() {
@@ -969,6 +918,16 @@ function bindButtons() {
     b('btn-adm-luck',     () => applyLuckMulti());
     b('btn-close-admin',  () => closeModal('admin-modal'));
     b('google-login-btn', () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(r => onLogin(r.user)));
+
+    // 動的生成要素のイベント委譲
+    document.addEventListener('click', e => {
+        const el = e.target.closest('[data-action]');
+        if (!el) return;
+        const action = el.dataset.action;
+        if (action === 'item')  itemAction(el.dataset.id, parseInt(el.dataset.price), el.dataset.type);
+        if (action === 'loan')  takeLoan(el.dataset.id);
+        if (action === 'claim') claimMission(el.dataset.id, parseInt(el.dataset.rm), parseInt(el.dataset.rb));
+    });
 }
 
 // ===== トースト =====
@@ -981,6 +940,77 @@ function toast(msg, color = '#0ff', dur = 2000) {
 }
 
 } // end startApp()
+
+// ===== ゲームアクション（グローバル） =====
+function buyBalls() {
+    if (money < 150) return;
+    money -= 150; totalSpent += 150; balls += 50; updateUI();
+}
+
+function exchangeSingle(type) {
+    const goldMult = equippedTool==='t-gravity' ? 3 : 1;
+    const rate = type==='gold' ? G.goldRate * goldMult : type==='silver' ? G.silverRate : 100;
+    if (inventory[type] <= 0) return;
+    money += inventory[type] * rate;
+    inventory[type] = 0;
+    updateUI();
+}
+
+function itemAction(id, price, type) {
+    if (!ownedItems.includes(id)) {
+        if (money < price) return;
+        money -= price; ownedItems.push(id);
+    } else {
+        if (type === 't') equippedTool = equippedTool===id ? null : id;
+        if (type === 's') activeSkin = id;
+    }
+    updateUI();
+}
+
+function claimMission(id, rm, rb) {
+    const claimed = JSON.parse(localStorage.getItem('p_m_claimed') || '[]');
+    if (claimed.includes(id)) return;
+    claimed.push(id);
+    localStorage.setItem('p_m_claimed', JSON.stringify(claimed));
+    money += rm; balls += rb;
+    toast(`🎁 $${rm.toLocaleString()} + ${rb}玉 GET!`, '#0f0');
+    updateUI();
+}
+
+function takeLoan(id) {
+    const l = ITEMS.loans.find(x => x.id === id);
+    if (!l) return;
+    if (!confirm(`${l.name}\n借入額: $${l.amount.toLocaleString()}\n利息: ログインのたびに10%加算\n\n借りますか？`)) return;
+    money += l.amount; debt += l.amount;
+    toast(`💸 $${l.amount.toLocaleString()} 借入完了！`, '#f90');
+    updateUI();
+}
+
+function takeCustomLoan() {
+    const amt = parseInt(document.getElementById('loan-input').value);
+    if (isNaN(amt) || amt <= 0) return alert('金額を入力してくれ');
+    if (!confirm(`$${amt.toLocaleString()} 借りますか？\n利息: ログインのたびに10%加算`)) return;
+    money += amt; debt += amt;
+    document.getElementById('loan-input').value = '';
+    toast(`💸 $${amt.toLocaleString()} 借入完了！`, '#f90');
+    updateUI();
+}
+
+function repayDebt(all = false) {
+    if (debt <= 0) return;
+    const amt = all ? debt : parseInt(document.getElementById('loan-input').value);
+    if (!all && (isNaN(amt) || amt <= 0)) return alert('返済額を入力してくれ');
+    if (money < amt) return alert('所持金が足りない！');
+    const actual = Math.min(amt, debt);
+    money -= actual; debt -= actual;
+    toast(`✅ $${actual.toLocaleString()} 返済！ 残債: $${debt.toLocaleString()}`, '#0f0', 2500);
+    updateUI();
+}
+
+function softReset() {
+    if (!confirm('全リセットするぜ？')) return;
+    initData(true); updateUI();
+}
 </script>
 </body>
 </html>
