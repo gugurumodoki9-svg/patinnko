@@ -222,7 +222,11 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
                     </div>
                     <div class="panel-section">
                         <h2 class="panel-title" style="color:#f55;">🏅 コミュニティイベント</h2>
-                        <div id="event-panel" style="background:#000;border-radius:8px;padding:10px;font-size:11px;"></div>
+                        <div id="event-panel" style="background:#000;border-radius:8px;padding:10px;font-size:11px;min-height:90px;"></div>
+                    </div>
+                    <div class="panel-section">
+                        <h2 class="panel-title" style="color:#a0f;">🌐 サーバー統計</h2>
+                        <div id="server-stats-panel" class="list-container" style="font-size:11px;line-height:2;padding:8px;"></div>
                     </div>
                 </div>
             </div>
@@ -454,7 +458,16 @@ function saveData() {
     localStorage.setItem('p_spent',  totalSpent);
     localStorage.setItem('p_combo',  comboCount);
     localStorage.setItem('p_shots',  totalShots);
-    if (currentUser) db.ref('users/' + currentUser.uid).set({name: currentUser.displayName, money});
+    if (currentUser) {
+        db.ref('users/' + currentUser.uid).set({name: currentUser.displayName, money});
+        // 発射数差分をサーバーに加算
+        const prevShots = parseInt(localStorage.getItem('p_shots_synced') || '0');
+        const diff = totalShots - prevShots;
+        if (diff > 0) {
+            db.ref('system/server_stats/total_shots').transaction(v => (v || 0) + diff);
+            localStorage.setItem('p_shots_synced', totalShots);
+        }
+    }
 }
 
 function updateUI() {
@@ -685,6 +698,13 @@ function exchangeSingle(type) {
     const earned = inventory[type] * rate;
     money += earned;
     inventory[type] = 0;
+    // サーバー統計に加算
+    db.ref('system/server_stats').once('value', ssnap => {
+        const ss = ssnap.val() || {};
+        db.ref('system/server_stats').update({
+            total_exchange: (ss.total_exchange || 0) + earned
+        });
+    });
     // イベント進捗に加算
     db.ref('system/event').once('value', snap => {
         const d = snap.val();
@@ -974,6 +994,11 @@ function onLogin(user) {
         debt+=interest;
         setTimeout(() => toast(`💀 利息 +$${interest.toLocaleString()} 加算！ 残債: $${debt.toLocaleString()}`, '#f44', 3000), 1000);
     }
+    // サーバー統計: プレイヤー数更新
+    db.ref('users').once('value', snap => {
+        const cnt = snap.numChildren ? snap.numChildren() : 0;
+        db.ref('system/server_stats').update({ total_players: cnt });
+    });
     document.getElementById('login-screen').style.display      = 'none';
     document.getElementById('pachinko-container').style.display = 'flex';
     document.getElementById('news-bar').style.display          = 'flex';
@@ -1012,6 +1037,17 @@ async function startApp() {
         if (d.luck_multi   !== undefined) G.luckMulti   = d.luck_multi;
         if (currentUser) updateUI();
     });
+    db.ref('system/server_stats').on('value', snap => {
+        const d = snap.val() || {};
+        const el = document.getElementById('server-stats-panel');
+        if (!el) return;
+        el.innerHTML = `
+            <div>🎯 総発射数: <b>${(d.total_shots||0).toLocaleString()}発</b></div>
+            <div>💴 総換金額: <b>$${(d.total_exchange||0).toLocaleString()}</b></div>
+            <div>👥 総プレイヤー数: <b>${(d.total_players||0).toLocaleString()}人</b></div>
+        `;
+    });
+
     db.ref('system/event').on('value', snap => {
         renderEventPanel(snap.val());
     });
