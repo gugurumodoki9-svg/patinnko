@@ -382,7 +382,7 @@ function renderHistory() {
         el.innerHTML = '<span style="color:#444;font-size:10px;">まだ記録なし</span>';
         return;
     }
-    const labels = { gold:'🥇', silver:'🥈', bronze:'🥉', miss:'×' };
+    const labels = { gold:'🥇', silver:'🥈', bronze:'🥉', miss:'❌️' };
     el.innerHTML = matchHistory.map(t =>
         `<span class="history-badge ${t==='miss'?'miss':'hit-'+t}">${labels[t]}</span>`
     ).join('');
