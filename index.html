@@ -108,6 +108,15 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
 .adm-grid label { font-size:9px; color:#aaa; display:flex; flex-direction:column; gap:2px; min-width:0; }
 .adm-grid input { background:#111; border:1px solid #444; color:#fff; padding:5px; border-radius:3px; font-size:11px; width:100%; box-sizing:border-box; min-width:0; }
 .adm-btn { width:100%; border:none; border-radius:4px; padding:8px; font-weight:bold; cursor:pointer; margin-top:4px; }
+.event-item { padding:6px 4px; border-bottom:1px solid #222; color:#fcc; }
+.event-item-title { font-weight:bold; color:#f88; margin-bottom:2px; }
+.event-item-body { color:#aaa; font-size:10px; }
+.no-event { color:#444; font-style:italic; }
+.event-progress-wrap { background:#111; border-radius:4px; height:14px; margin:6px 0; border:1px solid #333; overflow:hidden; }
+.event-progress-bar { height:100%; background:linear-gradient(90deg,#f55,#ff0); border-radius:4px; transition:width 0.5s; }
+.event-title { font-weight:bold; color:#f88; margin-bottom:4px; font-size:12px; }
+.event-amount { display:flex; justify-content:space-between; color:#aaa; margin-top:4px; }
+.event-complete { text-align:center; color:#ff0; font-weight:bold; font-size:13px; animation:kakuhen-flash 0.8s infinite; }
 </style>
 </head>
 <body>
@@ -179,6 +188,14 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
                     <div class="panel-section">
                         <h2 class="panel-title" style="color:#f90;">💸 融資</h2>
                         <div id="shop-loans"></div>
+                    </div>
+                    <div class="panel-section">
+                        <h2 class="panel-title" style="color:#0cf;">📊 統計</h2>
+                        <div id="stats-panel" class="list-container" style="font-size:11px;line-height:2;padding:8px;"></div>
+                    </div>
+                    <div class="panel-section">
+                        <h2 class="panel-title" style="color:#f55;">🏅 コミュニティイベント</h2>
+                        <div id="event-panel" style="background:#000;border-radius:8px;padding:10px;font-size:11px;min-height:60px;"></div>
                     </div>
                 </div>
                 <!-- 右カラム: ランキング + 換金所 + ミッション -->
@@ -297,6 +314,17 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
                 <div class="adm-section-title">🍀 ラックマルチ</div>
                 <input type="number" id="adm-luck-multi" value="1" step="0.1" min="0" class="styled-input" style="color:#a0f;font-size:16px;font-weight:bold;text-align:center;">
                 <button class="adm-btn" id="btn-adm-luck" style="background:#a0f;color:#fff;">全員に反映</button>
+            </div>
+            <!-- コミュニティイベント -->
+            <div class="adm-section">
+                <div class="adm-section-title">🏅 コミュニティイベント</div>
+                <input type="text" id="adm-event-title" class="styled-input" placeholder="イベント名">
+                <input type="number" id="adm-event-goal" class="styled-input" placeholder="目標金額 (例: 1000000)">
+                <input type="number" id="adm-event-bonus" class="styled-input" placeholder="達成ボーナス($)">
+                <div style="display:flex;gap:5px;">
+                    <button class="adm-btn" id="btn-adm-event-post" style="background:#f55;color:#fff;flex:1;">開始</button>
+                    <button class="adm-btn" id="btn-adm-event-clear" style="background:#333;color:#fff;flex:0.5;">終了</button>
+                </div>
             </div>
         </div>
         <button class="styled-button close-btn" id="btn-close-admin">閉じる</button>
@@ -446,7 +474,20 @@ function updateUI() {
     renderShop('shop-skins', ITEMS.skins, 's');
     renderLoans();
     renderMissions();
+    renderStats();
     saveData();
+}
+
+function renderStats() {
+    const el = document.getElementById('stats-panel');
+    if (!el) return;
+    el.innerHTML = `
+        <div>🎯 総発射数: <b>${(totalShots||0).toLocaleString()}発</b></div>
+        <div>💸 総消費額: <b>$${(totalSpent||0).toLocaleString()}</b></div>
+        <div>🔥 最高連チャン: <b>${(comboCount||0)}連</b></div>
+        <div>💰 所持金: <b>$${(money||0).toLocaleString()}</b></div>
+        <div>💀 借金: <b style="color:${debt>0?'#f44':'#0f0'}">$${(debt||0).toLocaleString()}</b></div>
+    `;
 }
 
 function renderShop(targetId, list, type) {
@@ -639,8 +680,25 @@ function exchangeSingle(type) {
     const goldMult = equippedTool==='t-gravity' ? 3 : 1;
     const rate = type==='gold' ? G.goldRate*goldMult : type==='silver' ? G.silverRate : 100;
     if (inventory[type]<=0) return;
-    money += inventory[type] * rate;
+    const earned = inventory[type] * rate;
+    money += earned;
     inventory[type] = 0;
+    // イベント進捗に加算
+    db.ref('system/event').once('value', snap => {
+        const d = snap.val();
+        if (d && d.title && d.current < d.goal) {
+            const newVal = (d.current || 0) + earned;
+            db.ref('system/event/current').set(newVal);
+            // 目標達成チェック
+            if (newVal >= d.goal && d.bonus > 0) {
+                // 全員にボーナス配布
+                db.ref('users').once('value', usnap => {
+                    usnap.forEach(u => db.ref('gifts/' + u.key).push({money: d.bonus, balls: 0}));
+                });
+                toast(`🏆 イベント目標達成！全員に$${parseInt(d.bonus).toLocaleString()}配布！`, '#ff0', 5000);
+            }
+        }
+    });
     updateUI();
 }
 
@@ -828,6 +886,50 @@ function applyPayouts() {
     alert('配当を全員に反映した！');
 }
 
+function renderEventPanel(d) {
+    const el = document.getElementById('event-panel');
+    if (!el) return;
+    if (!d || !d.title) {
+        el.innerHTML = '<div class="no-event" style="color:#444;font-style:italic;">現在開催中のイベントはないぞ</div>';
+        return;
+    }
+    const current = d.current || 0;
+    const goal    = d.goal || 1;
+    const pct     = Math.min(current / goal * 100, 100).toFixed(1);
+    const done    = current >= goal;
+    el.innerHTML = `
+        <div class="event-title">🎉 ${d.title}</div>
+        ${done
+            ? `<div class="event-complete">🏆 目標達成！おめでとう！</div>`
+            : `<div class="event-progress-wrap"><div class="event-progress-bar" style="width:${pct}%"></div></div>`
+        }
+        <div class="event-amount">
+            <span>💰 $${current.toLocaleString()}</span>
+            <span>🎯 $${goal.toLocaleString()}</span>
+        </div>
+        <div style="text-align:center;color:#ff0;font-size:10px;margin-top:4px;">${pct}% 達成${d.bonus ? ` / 達成ボーナス: $${parseInt(d.bonus).toLocaleString()}` : ''}</div>
+    `;
+}
+
+function postEvent() {
+    const title = document.getElementById('adm-event-title').value.trim();
+    const goal  = parseInt(document.getElementById('adm-event-goal').value);
+    const bonus = parseInt(document.getElementById('adm-event-bonus').value) || 0;
+    if (!title) return alert('イベント名を入れてくれ');
+    if (isNaN(goal) || goal <= 0) return alert('目標金額を入れてくれ');
+    db.ref('system/event').set({title, goal, bonus, current: 0, timestamp: Date.now()});
+    document.getElementById('adm-event-title').value = '';
+    document.getElementById('adm-event-goal').value  = '';
+    document.getElementById('adm-event-bonus').value = '';
+    alert(`イベント「${title}」開始！`);
+}
+
+function clearEvent() {
+    if (!confirm('イベントを終了する？')) return;
+    db.ref('system/event').remove();
+    alert('イベントを終了した');
+}
+
 function applyLuckMulti() {
     const lm = parseFloat(document.getElementById('adm-luck-multi').value);
     if (isNaN(lm)||lm<0) return alert('正しい値を入れてくれ');
@@ -881,6 +983,10 @@ async function startApp() {
         if (d.luck_multi   !== undefined) G.luckMulti   = d.luck_multi;
         if (currentUser) updateUI();
     });
+    db.ref('system/event').on('value', snap => {
+        renderEventPanel(snap.val());
+    });
+
     db.ref('system/news').on('value', snap => {
         const data = snap.val();
         updateTicker((data&&data.messages) ? data.messages : []);
@@ -927,7 +1033,9 @@ async function startApp() {
     b('btn-adm-clear',   () => clearNews());
     b('btn-adm-payouts', () => applyPayouts());
     b('btn-adm-luck',    () => applyLuckMulti());
-    b('btn-close-admin', () => closeModal('admin-modal'));
+    b('btn-close-admin',      () => closeModal('admin-modal'));
+    b('btn-adm-event-post',  () => postEvent());
+    b('btn-adm-event-clear', () => clearEvent());
 }
 
 startApp();
