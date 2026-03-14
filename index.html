@@ -366,6 +366,7 @@ let currentUser = null;
 let activeBalls = [], pegs = [];
 let adTimer = null;
 let matchHistory = [];
+let maxCombo = 0;
 
 function addHistory(type) {
     // type: 'gold' | 'silver' | 'bronze' | 'miss'
@@ -381,7 +382,7 @@ function renderHistory() {
         el.innerHTML = '<span style="color:#444;font-size:10px;">まだ記録なし</span>';
         return;
     }
-    const labels = { gold:'🥇', silver:'🥈', bronze:'🥉', miss:'❌️' };
+    const labels = { gold:'🥇', silver:'🥈', bronze:'🥉', miss:'×' };
     el.innerHTML = matchHistory.map(t =>
         `<span class="history-badge ${t==='miss'?'miss':'hit-'+t}">${labels[t]}</span>`
     ).join('');
@@ -530,7 +531,8 @@ function renderStats() {
     el.innerHTML = `
         <div>🎯 総発射数: <b>${(totalShots||0).toLocaleString()}発</b></div>
         <div>💸 総消費額: <b>$${(totalSpent||0).toLocaleString()}</b></div>
-        <div>🔥 最高連チャン: <b>${(comboCount||0)}連</b></div>
+        <div>🔥 最高連チャン: <b>${(maxCombo||0)}連</b></div>
+        <div>🎰 現在連チャン: <b>${(comboCount||0)}連</b></div>
         <div>💰 所持金: <b>$${(money||0).toLocaleString()}</b></div>
         <div>💀 借金: <b style="color:${debt>0?'#f44':'#0f0'}">$${(debt||0).toLocaleString()}</b></div>
     `;
@@ -687,22 +689,36 @@ function startSlot() {
 }
 
 function checkWin() {
-    const prob = isKakuhen ? G.kakuhenProb : G.normalProb;
-    if (Math.random() < prob) {
-        if (Math.random() < G.goldProb) {
-            applyLuckBonus(G.goldRate);
-            inventory.gold++; isKakuhen=true; comboCount++;
-            addHistory('gold');
+    const s1 = document.getElementById('s1').innerText;
+    const s2 = document.getElementById('s2').innerText;
+    const s3 = document.getElementById('s3').innerText;
+    const allMatch = (s1 === s2 && s2 === s3);
+    const twoMatch = !allMatch && (s1 === s2 || s2 === s3);
+
+    if (allMatch) {
+        // 3つ揃い → 確変/通常大当たり
+        const prob = isKakuhen ? G.kakuhenProb : G.normalProb;
+        if (Math.random() < prob) {
+            if (Math.random() < G.goldProb) {
+                applyLuckBonus(G.goldRate);
+                inventory.gold++; isKakuhen=true; comboCount++;
+                maxCombo = Math.max(maxCombo, comboCount);
+                addHistory('gold');
+            } else {
+                applyLuckBonus(G.silverRate);
+                inventory.silver++; isKakuhen=false; comboCount=0;
+                addHistory('silver');
+            }
         } else {
-            applyLuckBonus(G.silverRate);
-            inventory.silver++; isKakuhen=false; comboCount=0;
-            addHistory('silver');
+            comboCount = 0; isKakuhen = false;
+            addHistory('miss');
         }
-    } else if (document.getElementById('s1').innerText === document.getElementById('s2').innerText) {
+    } else if (twoMatch) {
+        // 2つ揃い → 銅景品
         inventory.bronze++;
         addHistory('bronze');
     } else {
-        comboCount = 0;
+        comboCount = 0; isKakuhen = false;
         addHistory('miss');
     }
     isSpinning=false; stock--; updateUI();
