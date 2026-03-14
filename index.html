@@ -179,7 +179,7 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
             <!-- 直近履歴 -->
             <div id="history-panel" style="margin-top:8px;background:#111;border:1px solid #333;border-radius:8px;padding:8px;">
                 <div style="font-size:10px;color:#888;letter-spacing:1px;margin-bottom:6px;text-align:center;">📋 直近の履歴</div>
-                <div id="history-list" style="display:flex;flex-direction:column;gap:3px;max-height:180px;overflow-y:auto;"></div>
+                <div id="history-list" style="display:flex;flex-wrap:nowrap;gap:3px;overflow:hidden;width:100%;"></div>
             </div>
         </div>
 
@@ -381,13 +381,9 @@ function renderHistory() {
         el.innerHTML = '<span style="color:#444;font-size:10px;">まだ記録なし</span>';
         return;
     }
-    const labels  = { gold:'🥇 確変',  silver:'🥈 通常',  bronze:'🥉 ボーナス', miss:'❌ 外れ' };
-    const colors  = { gold:'#ffd700', silver:'#aaa', bronze:'#cd7f32', miss:'#555' };
-    el.innerHTML = matchHistory.map((t, i) =>
-        `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 6px;border-radius:4px;background:${i===0?'#1a1a1a':'transparent'};border-left:3px solid ${colors[t]};">
-            <span style="color:${colors[t]};font-size:10px;font-weight:bold;">${labels[t]}</span>
-            <span style="color:#444;font-size:9px;">${i===0?'最新':i+'回前'}</span>
-        </div>`
+    const labels = { gold:'🥇', silver:'🥈', bronze:'🥉', miss:'×' };
+    el.innerHTML = matchHistory.map(t =>
+        `<span class="history-badge ${t==='miss'?'miss':'hit-'+t}">${labels[t]}</span>`
     ).join('');
 }
 
