@@ -117,7 +117,7 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
 .event-title { font-weight:bold; color:#f88; margin-bottom:4px; font-size:12px; }
 .event-amount { display:flex; justify-content:space-between; color:#aaa; margin-top:4px; }
 .event-complete { text-align:center; color:#ff0; font-weight:bold; font-size:13px; animation:kakuhen-flash 0.8s infinite; }
-.history-badge { border-radius:4px; padding:3px 7px; font-size:10px; font-weight:bold; }
+.history-badge { border-radius:4px; padding:2px 5px; font-size:9px; font-weight:bold; flex-shrink:0; }
 .history-badge.hit-gold { background:#ffd700; color:#000; }
 .history-badge.hit-silver { background:#aaa; color:#000; }
 .history-badge.hit-bronze { background:#cd7f32; color:#fff; }
@@ -179,7 +179,7 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
             <!-- 直近履歴 -->
             <div id="history-panel" style="margin-top:8px;background:#111;border:1px solid #333;border-radius:8px;padding:8px;">
                 <div style="font-size:10px;color:#888;letter-spacing:1px;margin-bottom:6px;text-align:center;">📋 直近の履歴</div>
-                <div id="history-list" style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;"></div>
+                <div id="history-list" style="display:flex;flex-direction:column;gap:3px;max-height:180px;overflow-y:auto;"></div>
             </div>
         </div>
 
@@ -370,7 +370,7 @@ let matchHistory = [];
 function addHistory(type) {
     // type: 'gold' | 'silver' | 'bronze' | 'miss'
     matchHistory.unshift(type);
-    if (matchHistory.length > 20) matchHistory.pop();
+    if (matchHistory.length > 15) matchHistory.pop();
     renderHistory();
 }
 
@@ -381,9 +381,13 @@ function renderHistory() {
         el.innerHTML = '<span style="color:#444;font-size:10px;">まだ記録なし</span>';
         return;
     }
-    const labels = { gold:'🥇確変', silver:'🥈通常', bronze:'🥉ボーナス', miss:'❌外れ' };
-    el.innerHTML = matchHistory.map(t =>
-        `<span class="history-badge hit-${t==='miss'?'':t} ${t==='miss'?'miss':''}">${labels[t]}</span>`
+    const labels  = { gold:'🥇 確変',  silver:'🥈 通常',  bronze:'🥉 ボーナス', miss:'❌ 外れ' };
+    const colors  = { gold:'#ffd700', silver:'#aaa', bronze:'#cd7f32', miss:'#555' };
+    el.innerHTML = matchHistory.map((t, i) =>
+        `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 6px;border-radius:4px;background:${i===0?'#1a1a1a':'transparent'};border-left:3px solid ${colors[t]};">
+            <span style="color:${colors[t]};font-size:10px;font-weight:bold;">${labels[t]}</span>
+            <span style="color:#444;font-size:9px;">${i===0?'最新':i+'回前'}</span>
+        </div>`
     ).join('');
 }
 
