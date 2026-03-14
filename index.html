@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎰</text></svg>">
 <title>超インフレ・パチンコ【THE FINAL】</title>
 
 <style>
@@ -55,7 +56,7 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
 .shop-cat { font-size:10px; color:#666; margin:8px 0 4px; }
 .shop-item { background:#252525; padding:10px; margin-bottom:4px; border-radius:5px; cursor:pointer; border:1px solid #333; display:flex; justify-content:space-between; font-size:11px; align-items:center; }
 .shop-item:hover { background:#2f2f2f; }
-.shop-item.equipped { border-color:#0ff; background:#102525; }
+.shop-item.equipped { border:2px solid #0ff; background:#102525; box-shadow:0 0 8px #0ff44; }
 .shop-item-desc { font-size:9px; color:#888; margin-top:2px; }
 
 /* 換金所 */
@@ -107,6 +108,17 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
 .adm-grid label { font-size:9px; color:#aaa; display:flex; flex-direction:column; gap:2px; min-width:0; }
 .adm-grid input { background:#111; border:1px solid #444; color:#fff; padding:5px; border-radius:3px; font-size:11px; width:100%; box-sizing:border-box; min-width:0; }
 .adm-btn { width:100%; border:none; border-radius:4px; padding:8px; font-weight:bold; cursor:pointer; margin-top:4px; }
+.event-item { padding:6px 4px; border-bottom:1px solid #222; color:#fcc; }
+.event-item-title { font-weight:bold; color:#f88; margin-bottom:2px; }
+.event-item-body { color:#aaa; font-size:10px; }
+.no-event { color:#444; font-style:italic; }
+.event-progress-wrap { background:#111; border-radius:4px; height:14px; margin:6px 0; border:1px solid #333; overflow:hidden; }
+.event-progress-bar { height:100%; background:linear-gradient(90deg,#f55,#ff0); border-radius:4px; transition:width 0.5s; }
+.event-title { font-weight:bold; color:#f88; margin-bottom:4px; font-size:12px; }
+.event-amount { display:flex; justify-content:space-between; color:#aaa; margin-top:4px; }
+.event-complete { text-align:center; color:#ff0; font-weight:bold; font-size:13px; animation:kakuhen-flash 0.8s infinite; }
+.event-active { border:2px solid #f55 !important; box-shadow:0 0 12px rgba(255,85,85,0.5); animation:event-glow 1.5s ease-in-out infinite; }
+@keyframes event-glow { 0%,100%{box-shadow:0 0 8px rgba(255,85,85,0.4)} 50%{box-shadow:0 0 18px rgba(255,85,85,0.8)} }
 </style>
 </head>
 <body>
@@ -179,8 +191,12 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
                         <h2 class="panel-title" style="color:#f90;">💸 融資</h2>
                         <div id="shop-loans"></div>
                     </div>
+                    <div class="panel-section">
+                        <h2 class="panel-title" style="color:#0cf;">📊 統計</h2>
+                        <div id="stats-panel" class="list-container" style="font-size:11px;line-height:2;padding:8px;min-height:110px;"></div>
+                    </div>
                 </div>
-                <!-- 右カラム: ランキング + 換金所 + ミッション -->
+                <!-- 右カラム: ランキング + 換金所 + ミッション + イベント -->
                 <div class="side-right">
                     <div class="panel-section">
                         <h2 class="panel-title" style="color:#ff0;">🏆 頂点 TOP5</h2>
@@ -203,6 +219,10 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
                         <button class="btn-ad" id="btn-ad">📺 広告</button>
                         <button class="btn-admin" id="btn-admin">🔧 管理</button>
                         <button class="btn-reset" id="btn-reset">リセット</button>
+                    </div>
+                    <div class="panel-section">
+                        <h2 class="panel-title" style="color:#f55;">🏅 コミュニティイベント</h2>
+                        <div id="event-panel" style="background:#000;border-radius:8px;padding:10px;font-size:11px;"></div>
                     </div>
                 </div>
             </div>
@@ -297,13 +317,23 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
                 <input type="number" id="adm-luck-multi" value="1" step="0.1" min="0" class="styled-input" style="color:#a0f;font-size:16px;font-weight:bold;text-align:center;">
                 <button class="adm-btn" id="btn-adm-luck" style="background:#a0f;color:#fff;">全員に反映</button>
             </div>
+            <!-- コミュニティイベント -->
+            <div class="adm-section">
+                <div class="adm-section-title">🏅 コミュニティイベント</div>
+                <input type="text" id="adm-event-title" class="styled-input" placeholder="イベント名">
+                <input type="number" id="adm-event-goal" class="styled-input" placeholder="目標金額 (例: 1000000)">
+                <input type="number" id="adm-event-bonus" class="styled-input" placeholder="達成ボーナス($)">
+                <div style="display:flex;gap:5px;">
+                    <button class="adm-btn" id="btn-adm-event-post" style="background:#f55;color:#fff;flex:1;">開始</button>
+                    <button class="adm-btn" id="btn-adm-event-clear" style="background:#333;color:#fff;flex:0.5;">終了</button>
+                </div>
+            </div>
         </div>
         <button class="styled-button close-btn" id="btn-close-admin">閉じる</button>
     </div>
 </div>
 
 <script>
-// ===== Firebase動的ロード =====
 const firebaseConfig = {
     apiKey: "AIzaSyA10j1O95LaPI_QrfqdalapIomXmzXRCms",
     authDomain: "patinnko2.firebaseapp.com",
@@ -315,60 +345,31 @@ const firebaseConfig = {
 };
 
 let auth, db;
-
-function loadScript(src) {
-    return new Promise((resolve, reject) => {
-        const s = document.createElement('script');
-        s.src = src; s.onload = resolve; s.onerror = reject;
-        document.head.appendChild(s);
-    });
-}
-
-async function initFirebase() {
-    await loadScript('https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js');
-    await loadScript('https://www.gstatic.com/firebasejs/9.1.3/firebase-auth-compat.js');
-    await loadScript('https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js');
-    firebase.initializeApp(firebaseConfig);
-    auth = firebase.auth();
-    db   = firebase.database();
-    startApp();
-}
-initFirebase();
-
-// ===== グローバル状態 =====
 let money, balls, inventory, ownedItems, equippedTool, activeSkin;
 let totalSpent, comboCount, totalShots, debt;
 let stock = 0, isSpinning = false, isKakuhen = false;
 let currentUser = null;
 let activeBalls = [], pegs = [];
+let adTimer = null;
 
-// サーバー設定（Firebaseから上書き）
-let G = {
-    kakuhenProb: 0.45,
-    normalProb:  0.08,
-    goldProb:    0.30,
-    silverRate:  500,
-    goldRate:    2000,
-    luckMulti:   1
-};
+let G = { kakuhenProb:0.45, normalProb:0.08, goldProb:0.30, silverRate:500, goldRate:2000, luckMulti:1 };
 
-// ===== 定数 =====
 const ITEMS = {
     tools: [
-        {id:'t-auto',    name:'🔫 自動連射機', price:5000},
-        {id:'t-magnet',  name:'🧲 磁力チャッカー', price:50000},
-        {id:'t-twin',    name:'⚔️ ツイン発射', price:500000},
-        {id:'t-triple',  name:'🔱 トリプル射出', price:2000000},
-        {id:'t-gravity', name:'🌌 重力崩壊', price:10000000}
+        {id:'t-auto',    name:'🔫 自動連射機',   price:5000,      desc:'自動で連続発射'},
+        {id:'t-magnet',  name:'🧲 磁力チャッカー', price:50000,     desc:'キャッチャー幅2倍（紫色）'},
+        {id:'t-twin',    name:'⚔️ ツイン発射',   price:500000,    desc:'2発同時発射'},
+        {id:'t-triple',  name:'🔱 ストックMAX',  price:2000000,   desc:'ストック上限4→8に拡張'},
+        {id:'t-gravity', name:'🌌 重力崩壊',     price:10000000,  desc:'金景品の換金額が3倍'}
     ],
     skins: [
-        {id:'s-def',    name:'📱 標準',  price:0,         bg:'#000', pin:'#ddd'},
-        {id:'s-neon',   name:'🌈 ネオン', price:100000,    bg:'#001', pin:'#0ff'},
-        {id:'s-gold',   name:'✨ 純金',  price:1000000,   bg:'#210', pin:'#ff0'},
-        {id:'s-ruby',   name:'🍎 紅蓮',  price:5000000,   bg:'#300', pin:'#f00'},
-        {id:'s-dia',    name:'💎 剛金',  price:20000000,  bg:'#112', pin:'#fff'},
-        {id:'s-galaxy', name:'🌌 銀河',  price:100000000, bg:'#001', pin:'#f0f'},
-        {id:'s-void',   name:'⬛ 無',    price:500000000, bg:'#000', pin:'#222'}
+        {id:'s-def',    name:'📱 標準',   price:0,         bg:'#000', pin:'#ddd'},
+        {id:'s-neon',   name:'🌈 ネオン',  price:100000,    bg:'#001', pin:'#0ff'},
+        {id:'s-gold',   name:'✨ 純金',   price:1000000,   bg:'#210', pin:'#ff0'},
+        {id:'s-ruby',   name:'🍎 紅蓮',   price:5000000,   bg:'#300', pin:'#f00'},
+        {id:'s-dia',    name:'💎 剛金',   price:20000000,  bg:'#112', pin:'#fff'},
+        {id:'s-galaxy', name:'🌌 銀河',   price:100000000, bg:'#001', pin:'#f0f'},
+        {id:'s-void',   name:'⬛ 無',     price:500000000, bg:'#000', pin:'#222'}
     ],
     loans: [
         {id:'l-sm',  name:'⚡ 小口融資', amount:10000,    desc:'$10,000借入 / 利息10%/ログイン'},
@@ -401,82 +402,47 @@ const MISSIONS = [
     {id:'m20', n:'究極コレクター: 全スキン所持', c:()=>ownedItems.filter(i=>i.startsWith('s-')).length>=7, rm:1000000, rb:2000},
 ];
 
-// ===== アプリ起動（Firebase準備完了後） =====
-function startApp() {
-bindButtons();
+const AD_CONFIG = [
+    {reward_money:100,   reward_balls:5,  duration:15},
+    {reward_money:300,   reward_balls:10, duration:20},
+    {reward_money:1000,  reward_balls:20, duration:25},
+    {reward_money:10000, reward_balls:50, duration:30},
+];
+const AD_DAILY_LIMIT = 5;
+const AD_EMOJIS = ['🚀','💊','🏖️','🎮','🍕','⚽','🎸','🌈','🦁','💡'];
+const outHoles = [{x:10,y:230,w:60,h:10},{x:230,y:230,w:60,h:10}];
 
-// ===== Firebase リアルタイムリスナー =====
-// 設定（配当・ラックマルチ）
-db.ref('system/settings').on('value', snap => {
-    const d = snap.val() || {};
-    if (d.kakuhen_prob !== undefined) G.kakuhenProb = d.kakuhen_prob;
-    if (d.normal_prob  !== undefined) G.normalProb  = d.normal_prob;
-    if (d.gold_prob    !== undefined) G.goldProb    = d.gold_prob;
-    if (d.silver_rate  !== undefined) G.silverRate  = d.silver_rate;
-    if (d.gold_rate    !== undefined) G.goldRate    = d.gold_rate;
-    if (d.luck_multi   !== undefined) G.luckMulti   = d.luck_multi;
-    if (currentUser) updateUI();
-});
+// ===== toast（最初に定義） =====
+function toast(msg, color='#0ff', dur=2000) {
+    const t = document.createElement('div');
+    t.innerText = msg;
+    t.style.cssText = `position:fixed;top:15%;left:50%;transform:translateX(-50%);background:#111;border:2px solid ${color};color:${color};padding:10px 20px;border-radius:10px;font-weight:bold;z-index:9999;font-size:13px;pointer-events:none;white-space:nowrap;`;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), dur);
+}
 
-// ニュース
-db.ref('system/news').on('value', snap => {
-    const data = snap.val();
-    const msgs = (data && data.messages) ? data.messages : [];
-    updateTicker(msgs);
-});
-
-// ===== 初期化 =====
-function initData(reset = false) {
+function initData(reset=false) {
     if (reset) {
-        money = 1000; balls = 100; debt = 0;
-        inventory = {bronze:0, silver:0, gold:0};
-        ownedItems = ['s-def']; activeSkin = 's-def'; equippedTool = null;
-        totalSpent = 0; comboCount = 0; totalShots = 0;
+        money=1000; balls=100; debt=0;
+        inventory={bronze:0,silver:0,gold:0};
+        ownedItems=['s-def']; activeSkin='s-def'; equippedTool=null;
+        totalSpent=0; comboCount=0; totalShots=0;
         localStorage.clear();
     } else {
-        money      = parseInt(localStorage.getItem('p_money'))  || 1000;
-        balls      = parseInt(localStorage.getItem('p_balls'))  || 100;
-        debt       = parseInt(localStorage.getItem('p_debt'))   || 0;
-        inventory  = JSON.parse(localStorage.getItem('p_prizes') || '{"bronze":0,"silver":0,"gold":0}');
-        ownedItems = JSON.parse(localStorage.getItem('p_owned')  || '["s-def"]');
-        activeSkin   = localStorage.getItem('p_skin') || 's-def';
-        equippedTool = localStorage.getItem('p_tool') || null;
-        totalSpent   = parseInt(localStorage.getItem('p_spent')) || 0;
-        comboCount   = parseInt(localStorage.getItem('p_combo')) || 0;
-        totalShots   = parseInt(localStorage.getItem('p_shots')) || 0;
+        money     = parseInt(localStorage.getItem('p_money'))  || 1000;
+        balls     = parseInt(localStorage.getItem('p_balls'))  || 100;
+        debt      = parseInt(localStorage.getItem('p_debt'))   || 0;
+        inventory = JSON.parse(localStorage.getItem('p_prizes') || '{"bronze":0,"silver":0,"gold":0}');
+        ownedItems  = JSON.parse(localStorage.getItem('p_owned') || '["s-def"]');
+        activeSkin  = localStorage.getItem('p_skin') || 's-def';
+        equippedTool= localStorage.getItem('p_tool') || null;
+        totalSpent  = parseInt(localStorage.getItem('p_spent')) || 0;
+        comboCount  = parseInt(localStorage.getItem('p_combo')) || 0;
+        totalShots  = parseInt(localStorage.getItem('p_shots')) || 0;
     }
-    stock = 0; isSpinning = false; isKakuhen = false;
+    stock=0; isSpinning=false; isKakuhen=false;
 }
 
-// ===== ログイン =====
-auth.onAuthStateChanged(user => {
-    if (user) onLogin(user);
-});
-// google-login-btn は bindButtons() でバインド済み
-
-function onLogin(user) {
-    currentUser = user;
-    initData();
-
-    // 利息計算
-    if (debt > 0) {
-        const interest = Math.floor(debt * 0.10);
-        debt += interest;
-        setTimeout(() => toast(`💀 利息 +$${interest.toLocaleString()} 加算！ 残債: $${debt.toLocaleString()}`, '#f44', 3000), 1000);
-    }
-
-    document.getElementById('login-screen').style.display   = 'none';
-    document.getElementById('pachinko-container').style.display = 'flex';
-    document.getElementById('news-bar').style.display       = 'flex';
-
-    updateUI();
-    setupCanvas();
-    draw();
-    setTimeout(updateRanking, 600);
-    listenGifts();
-}
-
-// ===== セーブ =====
 function saveData() {
     localStorage.setItem('p_money',  money);
     localStorage.setItem('p_balls',  balls);
@@ -491,49 +457,55 @@ function saveData() {
     if (currentUser) db.ref('users/' + currentUser.uid).set({name: currentUser.displayName, money});
 }
 
-// ===== UI更新 =====
 function updateUI() {
     document.getElementById('money-display').innerText = money.toLocaleString();
     document.getElementById('balls-display').innerText = balls;
     document.getElementById('combo-count').innerText   = comboCount;
-    document.getElementById('stock-lamps').innerText   = '●'.repeat(stock) + '○'.repeat(4 - stock);
+    const stockMax = equippedTool==='t-triple' ? 8 : 4;
+    document.getElementById('stock-lamps').innerText   = '●'.repeat(stock) + '○'.repeat(stockMax - stock);
     document.getElementById('luck-multi-display').innerText = `LUCK x${G.luckMulti}`;
     document.getElementById('kakuhen-lamp').innerText  = isKakuhen ? '🔥 確変中 🔥' : '通常';
     document.getElementById('pachinko-machine').className = isKakuhen ? 'kakuhen-mode' : '';
     document.getElementById('p-bronze').innerText = inventory.bronze;
     document.getElementById('p-silver').innerText = inventory.silver;
     document.getElementById('p-gold').innerText   = inventory.gold;
-
-    // 借金パネル
     const panel = document.getElementById('debt-panel');
-    document.getElementById('debt-panel-amount').innerText = '$' + (debt || 0).toLocaleString();
+    document.getElementById('debt-panel-amount').innerText = '$' + (debt||0).toLocaleString();
     panel.className = debt > 0 ? 'in-debt' : '';
-
-    // ショップ
     renderShop('shop-tools', ITEMS.tools, 't');
     renderShop('shop-skins', ITEMS.skins, 's');
     renderLoans();
-
-    // ミッション
     renderMissions();
-
+    renderStats();
     saveData();
+}
+
+function renderStats() {
+    const el = document.getElementById('stats-panel');
+    if (!el) return;
+    el.innerHTML = `
+        <div>🎯 総発射数: <b>${(totalShots||0).toLocaleString()}発</b></div>
+        <div>💸 総消費額: <b>$${(totalSpent||0).toLocaleString()}</b></div>
+        <div>🔥 最高連チャン: <b>${(comboCount||0)}連</b></div>
+        <div>💰 所持金: <b>$${(money||0).toLocaleString()}</b></div>
+        <div>💀 借金: <b style="color:${debt>0?'#f44':'#0f0'}">$${(debt||0).toLocaleString()}</b></div>
+    `;
 }
 
 function renderShop(targetId, list, type) {
     document.getElementById(targetId).innerHTML = list.map(item => {
-        const owned    = ownedItems.includes(item.id);
-        const equipped = (type === 't' && equippedTool === item.id) || (type === 's' && activeSkin === item.id);
-        return `<div class="shop-item ${equipped ? 'equipped' : ''}">
-            <span>${item.name}</span>
-            <span>${owned ? (equipped ? '装備中' : '所有') : '$' + item.price.toLocaleString()}</span>
+        const owned   = ownedItems.includes(item.id);
+        const equipped= (type==='t' && equippedTool===item.id) || (type==='s' && activeSkin===item.id);
+        return `<div class="shop-item ${equipped?'equipped':''}" data-action="item" data-id="${item.id}" data-price="${item.price}" data-type="${type}">
+            <div><div>${item.name}</div>${item.desc?`<div class="shop-item-desc">${item.desc}</div>`:''}</div>
+            <span>${owned?(equipped?'装備中':'所有'):'$'+item.price.toLocaleString()}</span>
         </div>`;
     }).join('');
 }
 
 function renderLoans() {
     document.getElementById('shop-loans').innerHTML = ITEMS.loans.map(l =>
-        `<div class="shop-item">
+        `<div class="shop-item" data-action="loan" data-id="${l.id}">
             <div><div>${l.name}</div><div class="shop-item-desc">${l.desc}</div></div>
             <span style="color:#f90;">借りる</span>
         </div>`
@@ -545,30 +517,28 @@ function renderMissions() {
     document.getElementById('mission-list').innerHTML = MISSIONS.map(m => {
         const done     = claimed.includes(m.id);
         const achieved = m.c();
-        const claimable = achieved && !done;
-        const cls = done ? 'done' : (claimable ? 'claimable' : '');
+        const claimable= achieved && !done;
+        const cls  = done ? 'done' : (claimable ? 'claimable' : '');
         const icon = done ? '✅' : (claimable ? '🎁' : '❌');
         return `<div class="mission-item ${cls}">
             <span>${icon} ${m.n}</span>
             <span class="mission-reward">$${m.rm.toLocaleString()} + ${m.rb}玉</span>
-            ${claimable ? `<button class="claim-btn">受け取る</button>` : ''}
+            ${claimable?`<button class="claim-btn" data-action="claim" data-id="${m.id}" data-rm="${m.rm}" data-rb="${m.rb}">受け取る</button>`:''}
         </div>`;
     }).join('');
 }
 
-// ===== ランキング =====
 function updateRanking() {
-    db.ref('users').orderByChild('money').limitToLast(5).on('value', snap => {
+    db.ref('users').on('value', snap => {
         const arr = [];
-        snap.forEach(s => arr.push(s.val()));
-        arr.reverse();
-        document.getElementById('ranking-list').innerHTML = arr.map((u, i) =>
-            `<div class="rank-item"><span>${i+1}. ${u.name}</span><span>$${u.money.toLocaleString()}</span></div>`
+        snap.forEach(s => { const v=s.val(); if(v&&v.name&&v.money!==undefined) arr.push(v); });
+        arr.sort((a,b) => b.money - a.money);
+        document.getElementById('ranking-list').innerHTML = arr.slice(0,5).map((u,i) =>
+            `<div class="rank-item"><span>${['🥇','🥈','🥉','4️⃣','5️⃣'][i]} ${u.name}</span><span>$${u.money.toLocaleString()}</span></div>`
         ).join('') || '<div style="color:#555;padding:4px;">データなし</div>';
     });
 }
 
-// ===== ギフト =====
 function listenGifts() {
     db.ref('gifts/' + currentUser.uid).on('value', snap => {
         const list = document.getElementById('gift-list');
@@ -583,70 +553,66 @@ function listenGifts() {
             btn.style.marginBottom = '8px';
             btn.innerText = `🎁 $${(d.money||0).toLocaleString()} + ${d.balls||0}玉`;
             btn.onclick = () => {
-                money += (d.money || 0);
-                balls += (d.balls || 0);
-                db.ref('gifts/' + currentUser.uid + '/' + g.key).remove();
+                money += (d.money||0); balls += (d.balls||0);
+                db.ref('gifts/'+currentUser.uid+'/'+g.key).remove();
                 toast(`🎁 受け取った！ +$${(d.money||0).toLocaleString()} +${d.balls||0}玉`, '#9400d3', 2500);
                 updateUI();
             };
             list.appendChild(btn);
         });
-        if (count === 0) list.innerHTML = '<div style="color:#555;font-size:12px;padding:8px;">ギフトなし</div>';
-        else if (count > 0) toast(`🎁 ギフトが${count}件届いてるぞ！`, '#9400d3', 2500);
+        if (count===0) list.innerHTML = '<div style="color:#555;font-size:12px;padding:8px;">ギフトなし</div>';
+        else toast(`🎁 ギフトが${count}件届いてるぞ！`, '#9400d3', 2500);
     });
 }
 
-// ===== ニュースティッカー =====
 function updateTicker(msgs) {
     const el = document.getElementById('news-ticker-text');
     if (!el) return;
     const text = msgs.length > 0
-        ? msgs.map(m => `◆ ${m.text}`).join('　　　　　') + '　　　　　'
+        ? msgs.map(m=>`◆ ${m.text}`).join('　　　　　') + '　　　　　'
         : 'SYSTEM ONLINE --- 超インフレ・パチンコへようこそ ---';
     el.innerText = text;
     el.style.animation = 'none';
-    el.offsetHeight; // reflow
-    const dur = Math.max(20, text.length * 0.28);
-    el.style.animation = `ticker-scroll ${dur}s linear infinite`;
+    el.offsetHeight;
+    el.style.animation = `ticker-scroll ${Math.max(20, text.length*0.28)}s linear infinite`;
 }
 
-// ===== パチンコ物理 =====
-const outHoles = [{x:10,y:230,w:60,h:10},{x:230,y:230,w:60,h:10}];
 function setupCanvas() {
     pegs = [];
-    for (let y = 60; y <= 210; y += 30) {
-        const off = (Math.floor(y/30) % 2 === 0) ? 15 : 0;
-        for (let x = 30; x < 280; x += 30) pegs.push({x:x+off, y, type:'pin'});
+    for (let y=60; y<=210; y+=30) {
+        const off = (Math.floor(y/30)%2===0) ? 15 : 0;
+        for (let x=30; x<280; x+=30) pegs.push({x:x+off, y, type:'pin'});
     }
     const addRail = (x1,y1,x2,y2) => {
         const dist = Math.sqrt((x2-x1)**2+(y2-y1)**2);
         for (let i=0; i<dist; i+=4) pegs.push({x:x1+(x2-x1)*(i/dist), y:y1+(y2-y1)*(i/dist), type:'rail'});
     };
     addRail(0,260,110,315); addRail(300,260,190,315);
-
     document.getElementById('shootBtn').onclick = () => {
-        if (balls <= 0) return;
-        const cnt = equippedTool==='t-twin' ? 2 : equippedTool==='t-triple' ? 3 : equippedTool==='t-gravity' ? 5 : 1;
+        if (balls<=0) return;
+        const cnt = equippedTool==='t-twin' ? 2 : 1;
         for (let i=0; i<cnt; i++) {
-            if (balls > 0) { balls--; totalShots++; activeBalls.push({x:150+(Math.random()-0.5)*20, y:-10, vx:(Math.random()-0.5)*2, vy:2}); }
+            if (balls>0) { balls--; totalShots++; activeBalls.push({x:150+(Math.random()-0.5)*20, y:-10, vx:(Math.random()-0.5)*2, vy:2}); }
         }
         updateUI();
     };
-    setInterval(() => { if (equippedTool==='t-auto' && balls>0) document.getElementById('shootBtn').click(); }, 400);
+    setInterval(() => { if(equippedTool==='t-auto' && balls>0) document.getElementById('shootBtn').click(); }, 400);
 }
 
 function draw() {
     const canvas = document.getElementById('pachinkoCanvas');
     const ctx = canvas.getContext('2d');
-    const skin = ITEMS.skins.find(s => s.id === activeSkin) || ITEMS.skins[0];
+    const skin = ITEMS.skins.find(s=>s.id===activeSkin) || ITEMS.skins[0];
     ctx.fillStyle = skin.bg; ctx.fillRect(0,0,300,340);
     outHoles.forEach(h => { ctx.fillStyle='#300'; ctx.fillRect(h.x,h.y,h.w,h.h); });
     pegs.forEach(p => {
         ctx.fillStyle = p.type==='rail' ? '#444' : skin.pin;
         ctx.beginPath(); ctx.arc(p.x,p.y,p.type==='rail'?1.2:2,0,7); ctx.fill();
     });
+    const catcherW = equippedTool==='t-magnet' ? 60 : 30;
     const cX = 135 + Math.sin(Date.now()/500)*60;
-    ctx.strokeStyle = '#0ff'; ctx.strokeRect(cX,315,30,15);
+    ctx.strokeStyle = equippedTool==='t-magnet' ? '#f0f' : '#0ff';
+    ctx.strokeRect(cX,315,catcherW,15);
     for (let i=0; i<activeBalls.length; i++) {
         let b = activeBalls[i];
         b.vy += 0.22; b.x += b.vx; b.y += b.vy;
@@ -655,9 +621,10 @@ function draw() {
             if (d<7) { const a=Math.atan2(dy,dx); b.vx=Math.cos(a)*1.8; b.vy=Math.sin(a)*1.8; }
         });
         outHoles.forEach(h => { if(b.x>h.x&&b.x<h.x+h.w&&b.y>h.y&&b.y<h.y+h.h){activeBalls.splice(i,1);i--;} });
-        if (b && b.y>315 && b.x>cX && b.x<cX+30) {
+        if (b && b.y>315 && b.x>cX && b.x<cX+catcherW) {
             activeBalls.splice(i,1); i--;
-            if (stock<4) { stock++; updateUI(); startSlot(); }
+            const stockMax = equippedTool==='t-triple' ? 8 : 4;
+            if (stock<stockMax) { stock++; updateUI(); startSlot(); }
         } else if (b && b.y>350) { activeBalls.splice(i,1); i--; }
         if (b) { ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(b.x,b.y,4,0,7); ctx.fill(); }
     }
@@ -680,59 +647,70 @@ function checkWin() {
     if (Math.random() < prob) {
         if (Math.random() < G.goldProb) {
             applyLuckBonus(G.goldRate);
-            inventory.gold++; isKakuhen = true; comboCount++;
+            inventory.gold++; isKakuhen=true; comboCount++;
         } else {
             applyLuckBonus(G.silverRate);
-            inventory.silver++; isKakuhen = false; comboCount = 0;
+            inventory.silver++; isKakuhen=false; comboCount=0;
         }
     } else if (document.getElementById('s1').innerText === document.getElementById('s2').innerText) {
         inventory.bronze++;
     } else {
         comboCount = 0;
     }
-    isSpinning = false; stock--; updateUI();
-    if (stock > 0) setTimeout(startSlot, 300);
+    isSpinning=false; stock--; updateUI();
+    if (stock>0) setTimeout(startSlot, 300);
 }
 
 function applyLuckBonus(base) {
     const LM = G.luckMulti;
-    if (LM === 1) return base;
-    if (LM > 1) {
-        if (LM <= 10) {
-            if (Math.random() < (LM-1)*0.1) { toast(`⭐ LUCK BONUS x${LM}!`, '#a0f'); return Math.floor(base*LM); }
-        } else {
-            let result = Math.floor(base*LM);
-            if (Math.random() < (LM-10)*0.1) { toast(`🌟 DOUBLE LUCK!! x${LM}x${LM}!`, '#f0f'); result = Math.floor(result*LM); }
-            else toast(`⭐ LUCK BONUS x${LM}!`, '#a0f');
-            return result;
-        }
-    } else if (LM < 1) {
-        if (Math.random() < 1-LM) { toast(`💀 BAD LUCK x${LM}`, '#f44'); return Math.floor(base*LM); }
+    if (LM===1) return base;
+    if (LM>1) {
+        const chance = Math.min((LM-1)*0.1, 1.0);
+        if (Math.random()<chance) { toast(`⭐ LUCK BONUS x2!`,'#a0f'); return Math.floor(base*2); }
+    } else if (LM<1) {
+        if (Math.random()<1-LM) { toast(`💀 BAD LUCK x${LM}`,'#f44'); return Math.floor(base*LM); }
     }
     return base;
 }
 
-// ===== ゲームアクション =====
 function buyBalls() {
-    if (money < 150) return;
-    money -= 150; totalSpent += 150; balls += 50; updateUI();
+    if (money<150) return;
+    money-=150; totalSpent+=150; balls+=50; updateUI();
 }
 
 function exchangeSingle(type) {
-    const rate = type==='gold' ? G.goldRate : type==='silver' ? G.silverRate : 100;
-    if (inventory[type] <= 0) return;
-    money += inventory[type] * rate;
+    const goldMult = equippedTool==='t-gravity' ? 3 : 1;
+    const rate = type==='gold' ? G.goldRate*goldMult : type==='silver' ? G.silverRate : 100;
+    if (inventory[type]<=0) return;
+    const earned = inventory[type] * rate;
+    money += earned;
     inventory[type] = 0;
+    // イベント進捗に加算
+    db.ref('system/event').once('value', snap => {
+        const d = snap.val();
+        if (d && d.title && d.current < d.goal) {
+            const newVal = (d.current || 0) + earned;
+            db.ref('system/event/current').set(newVal);
+            // 目標達成チェック
+            if (newVal >= d.goal && d.bonus > 0) {
+                // 全員にボーナス配布
+                db.ref('users').once('value', usnap => {
+                    usnap.forEach(u => db.ref('gifts/' + u.key).push({money: d.bonus, balls: 0}));
+                });
+                toast(`🏆 イベント目標達成！全員に$${parseInt(d.bonus).toLocaleString()}配布！`, '#ff0', 5000);
+            }
+        }
+    });
     updateUI();
 }
 
 function itemAction(id, price, type) {
     if (!ownedItems.includes(id)) {
-        if (money < price) return;
-        money -= price; ownedItems.push(id);
+        if (money<price) return;
+        money-=price; ownedItems.push(id);
     } else {
-        if (type === 't') equippedTool = equippedTool===id ? null : id;
-        if (type === 's') activeSkin = id;
+        if (type==='t') equippedTool = equippedTool===id ? null : id;
+        if (type==='s') activeSkin = id;
     }
     updateUI();
 }
@@ -742,37 +720,37 @@ function claimMission(id, rm, rb) {
     if (claimed.includes(id)) return;
     claimed.push(id);
     localStorage.setItem('p_m_claimed', JSON.stringify(claimed));
-    money += rm; balls += rb;
+    money+=rm; balls+=rb;
     toast(`🎁 $${rm.toLocaleString()} + ${rb}玉 GET!`, '#0f0');
     updateUI();
 }
 
 function takeLoan(id) {
-    const l = ITEMS.loans.find(x => x.id === id);
+    const l = ITEMS.loans.find(x=>x.id===id);
     if (!l) return;
     if (!confirm(`${l.name}\n借入額: $${l.amount.toLocaleString()}\n利息: ログインのたびに10%加算\n\n借りますか？`)) return;
-    money += l.amount; debt += l.amount;
+    money+=l.amount; debt+=l.amount;
     toast(`💸 $${l.amount.toLocaleString()} 借入完了！`, '#f90');
     updateUI();
 }
 
 function takeCustomLoan() {
     const amt = parseInt(document.getElementById('loan-input').value);
-    if (isNaN(amt) || amt <= 0) return alert('金額を入力してくれ');
+    if (isNaN(amt)||amt<=0) return alert('金額を入力してくれ');
     if (!confirm(`$${amt.toLocaleString()} 借りますか？\n利息: ログインのたびに10%加算`)) return;
-    money += amt; debt += amt;
+    money+=amt; debt+=amt;
     document.getElementById('loan-input').value = '';
     toast(`💸 $${amt.toLocaleString()} 借入完了！`, '#f90');
     updateUI();
 }
 
-function repayDebt(all = false) {
-    if (debt <= 0) return;
+function repayDebt(all=false) {
+    if (debt<=0) return;
     const amt = all ? debt : parseInt(document.getElementById('loan-input').value);
-    if (!all && (isNaN(amt) || amt <= 0)) return alert('返済額を入力してくれ');
-    if (money < amt) return alert('所持金が足りない！');
+    if (!all && (isNaN(amt)||amt<=0)) return alert('返済額を入力してくれ');
+    if (money<amt) return alert('所持金が足りない！');
     const actual = Math.min(amt, debt);
-    money -= actual; debt -= actual;
+    money-=actual; debt-=actual;
     toast(`✅ $${actual.toLocaleString()} 返済！ 残債: $${debt.toLocaleString()}`, '#0f0', 2500);
     updateUI();
 }
@@ -782,150 +760,47 @@ function softReset() {
     initData(true); updateUI();
 }
 
-// ===== 管理者機能 =====
-function authAdmin() {
-    if (!document.getElementById('admin-pw').value.includes('ryo1031')) return alert('コードが違う');
-    document.getElementById('admin-panel-ui').style.display = 'block';
-    document.getElementById('admin-auth-area').style.display = 'none';
-    // 現在値をフォームに反映
-    document.getElementById('adm-kakuhen-prob').value = (G.kakuhenProb * 100).toFixed(0);
-    document.getElementById('adm-normal-prob').value  = (G.normalProb  * 100).toFixed(0);
-    document.getElementById('adm-gold-prob').value    = (G.goldProb    * 100).toFixed(0);
-    document.getElementById('adm-silver-rate').value  = G.silverRate;
-    document.getElementById('adm-gold-rate').value    = G.goldRate;
-    document.getElementById('adm-luck-multi').value   = G.luckMulti;
-}
-
-function applyAdminSelf() {
-    const m = parseInt(document.getElementById('adm-money').value);
-    const b = parseInt(document.getElementById('adm-balls').value);
-    if (!isNaN(m)) money = m;
-    if (!isNaN(b)) balls = b;
-    updateUI(); alert('書き換えた！');
-}
-
-function distributeGift() {
-    const m = parseInt(document.getElementById('adm-dist-money').value) || 0;
-    const b = parseInt(document.getElementById('adm-dist-balls').value) || 0;
-    if (!m && !b) return alert('金額か玉数を入れてくれ');
-    db.ref('users').once('value', snap => {
-        snap.forEach(u => db.ref('gifts/' + u.key).push({money: m, balls: b}));
-        alert(`配布完了！ $${m.toLocaleString()} + ${b}玉`);
-    });
-}
-
-function postNews() {
-    const msg = document.getElementById('adm-news-input').value.trim();
-    if (!msg) return alert('内容を入れてくれ');
-    db.ref('system/news').once('value', snap => {
-        const existing = (snap.val() && snap.val().messages) ? snap.val().messages : [];
-        const updated = [{text: msg, timestamp: Date.now()}, ...existing].slice(0, 5);
-        db.ref('system/news').set({messages: updated});
-        document.getElementById('adm-news-input').value = '';
-        alert('投稿完了！');
-    });
-}
-
-function clearNews() {
-    db.ref('system/news').set({messages: []});
-    alert('ニュースをクリアした');
-}
-
-function applyPayouts() {
-    const settings = {
-        kakuhen_prob: parseFloat(document.getElementById('adm-kakuhen-prob').value) / 100,
-        normal_prob:  parseFloat(document.getElementById('adm-normal-prob').value)  / 100,
-        gold_prob:    parseFloat(document.getElementById('adm-gold-prob').value)    / 100,
-        silver_rate:  parseInt(document.getElementById('adm-silver-rate').value),
-        gold_rate:    parseInt(document.getElementById('adm-gold-rate').value),
-        luck_multi:   G.luckMulti
-    };
-    db.ref('system/settings').set(settings);
-    alert('配当を全員に反映した！');
-}
-
-function applyLuckMulti() {
-    const lm = parseFloat(document.getElementById('adm-luck-multi').value);
-    if (isNaN(lm) || lm < 0) return alert('正しい値を入れてくれ');
-    db.ref('system/settings').update({luck_multi: lm});
-    alert(`ラックマルチ x${lm} を全員に反映した！`);
-}
-
-// ===== モーダル =====
-function openModal(id) {
-    // 管理者モーダルを開く時は毎回認証エリアをリセット
-    if (id === 'admin-modal') {
-        document.getElementById('admin-auth-area').style.display = 'block';
-        document.getElementById('admin-panel-ui').style.display = 'none';
-        document.getElementById('admin-pw').value = '';
-    }
-    document.getElementById(id).style.display = 'flex';
-}
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
-
-// ===== 広告報酬システム =====
-const AD_CONFIG = [
-    { reward_money: 5000,    reward_balls: 50,   duration: 15 },
-    { reward_money: 20000,   reward_balls: 100,  duration: 20 },
-    { reward_money: 100000,  reward_balls: 200,  duration: 25 },
-    { reward_money: 500000,  reward_balls: 500,  duration: 30 },
-];
-const AD_DAILY_LIMIT = 5;
-const AD_EMOJIS = ['🚀','💊','🏖️','🎮','🍕','⚽','🎸','🌈','🦁','💡'];
-
 function getAdData() {
     const today = new Date().toDateString();
     const raw = JSON.parse(localStorage.getItem('p_ad_data') || '{}');
-    if (raw.date !== today) return { date: today, count: 0 };
+    if (raw.date!==today) return {date:today, count:0};
     return raw;
 }
 
 function watchAd() {
     const adData = getAdData();
     const remaining = AD_DAILY_LIMIT - adData.count;
-    const tier = Math.min(Math.floor(adData.count), AD_CONFIG.length - 1);
+    const tier = Math.min(adData.count, AD_CONFIG.length-1);
     const cfg = AD_CONFIG[tier];
-
     document.getElementById('ad-reward-amount').innerText = cfg.reward_money.toLocaleString();
     document.getElementById('ad-reward-balls').innerText  = cfg.reward_balls;
     document.getElementById('ad-remaining').innerText     = remaining;
     document.getElementById('ad-countdown').innerText     = '';
     document.getElementById('ad-progress-wrap').style.display = 'none';
     document.getElementById('ad-progress-bar').style.width    = '0%';
-    document.getElementById('ad-watch-btn').disabled = remaining <= 0;
-    document.getElementById('ad-watch-btn').innerText = remaining > 0 ? '▶ 視聴開始' : '本日の上限に達した';
-    document.getElementById('ad-timer-label').innerText = remaining > 0
-        ? `動画を最後まで見ると報酬ゲット！（${cfg.duration}秒）`
-        : '明日また見てね！';
+    document.getElementById('ad-watch-btn').disabled = remaining<=0;
+    document.getElementById('ad-watch-btn').innerText = remaining>0 ? '▶ 視聴開始' : '本日の上限に達した';
+    document.getElementById('ad-timer-label').innerText = remaining>0 ? `動画を最後まで見ると報酬ゲット！（${cfg.duration}秒）` : '明日また見てね！';
     document.getElementById('ad-content').innerText = '📺';
     document.getElementById('ad-modal').style.display = 'flex';
 }
 
-let adTimer = null;
 function startAdWatch() {
     const adData = getAdData();
     if (AD_DAILY_LIMIT - adData.count <= 0) return;
-    const tier = Math.min(adData.count, AD_CONFIG.length - 1);
+    const tier = Math.min(adData.count, AD_CONFIG.length-1);
     const cfg = AD_CONFIG[tier];
-
     document.getElementById('ad-watch-btn').disabled = true;
     document.getElementById('ad-progress-wrap').style.display = 'block';
-
     let elapsed = 0;
-    const total = cfg.duration;
     adTimer = setInterval(() => {
         elapsed++;
-        const pct = (elapsed / total) * 100;
-        document.getElementById('ad-progress-bar').style.width = pct + '%';
-        document.getElementById('ad-countdown').innerText = `残り ${total - elapsed}秒`;
+        document.getElementById('ad-progress-bar').style.width = (elapsed/cfg.duration*100) + '%';
+        document.getElementById('ad-countdown').innerText = `残り ${cfg.duration-elapsed}秒`;
         document.getElementById('ad-content').innerText = AD_EMOJIS[elapsed % AD_EMOJIS.length];
-
-        if (elapsed >= total) {
+        if (elapsed >= cfg.duration) {
             clearInterval(adTimer);
-            // 報酬付与
-            money += cfg.reward_money;
-            balls += cfg.reward_balls;
+            money+=cfg.reward_money; balls+=cfg.reward_balls;
             adData.count++;
             localStorage.setItem('p_ad_data', JSON.stringify(adData));
             document.getElementById('ad-content').innerText = '🎉';
@@ -938,49 +813,261 @@ function startAdWatch() {
 }
 
 function closeAdModal() {
-    if (adTimer) { clearInterval(adTimer); adTimer = null; }
+    if (adTimer) { clearInterval(adTimer); adTimer=null; }
     document.getElementById('ad-modal').style.display = 'none';
 }
 
-
-// ===== ボタンバインド =====
-function bindButtons() {
-    const b = (id, fn) => { const el = document.getElementById(id); if(el) el.addEventListener('click', fn); };
-    b('btn-buy-balls',    () => buyBalls());
-    b('btn-custom-loan',  () => takeCustomLoan());
-    b('btn-repay',        () => repayDebt(false));
-    b('btn-repay-all',    () => repayDebt(true));
-    b('btn-ex-bronze',    () => exchangeSingle('bronze'));
-    b('btn-ex-silver',    () => exchangeSingle('silver'));
-    b('btn-ex-gold',      () => exchangeSingle('gold'));
-    b('btn-gift',         () => openModal('gift-modal'));
-    b('btn-ad',           () => watchAd());
-    b('btn-admin',        () => openModal('admin-modal'));
-    b('btn-reset',        () => softReset());
-    b('btn-close-gift',   () => closeModal('gift-modal'));
-    b('ad-watch-btn',     () => startAdWatch());
-    b('btn-close-ad',     () => closeAdModal());
-    b('btn-auth-admin',   () => authAdmin());
-    b('btn-adm-self',     () => applyAdminSelf());
-    b('btn-adm-dist',     () => distributeGift());
-    b('btn-adm-news',     () => postNews());
-    b('btn-adm-clear',    () => clearNews());
-    b('btn-adm-payouts',  () => applyPayouts());
-    b('btn-adm-luck',     () => applyLuckMulti());
-    b('btn-close-admin',  () => closeModal('admin-modal'));
-    b('google-login-btn', () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(r => onLogin(r.user)));
+function openModal(id) {
+    if (id==='admin-modal') {
+        document.getElementById('admin-auth-area').style.display = 'block';
+        document.getElementById('admin-panel-ui').style.display  = 'none';
+        document.getElementById('admin-pw').value = '';
+    }
+    document.getElementById(id).style.display = 'flex';
 }
 
-// ===== トースト =====
-function toast(msg, color = '#0ff', dur = 2000) {
-    const t = document.createElement('div');
-    t.innerText = msg;
-    t.style.cssText = `position:fixed;top:15%;left:50%;transform:translateX(-50%);background:#111;border:2px solid ${color};color:${color};padding:10px 20px;border-radius:10px;font-weight:bold;z-index:9999;font-size:13px;pointer-events:none;white-space:nowrap;`;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), dur);
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+function authAdmin() {
+    if (!document.getElementById('admin-pw').value.includes('ryo1031')) return alert('コードが違う');
+    document.getElementById('admin-panel-ui').style.display  = 'block';
+    document.getElementById('admin-auth-area').style.display = 'none';
+    document.getElementById('adm-kakuhen-prob').value = (G.kakuhenProb*100).toFixed(0);
+    document.getElementById('adm-normal-prob').value  = (G.normalProb*100).toFixed(0);
+    document.getElementById('adm-gold-prob').value    = (G.goldProb*100).toFixed(0);
+    document.getElementById('adm-silver-rate').value  = G.silverRate;
+    document.getElementById('adm-gold-rate').value    = G.goldRate;
+    document.getElementById('adm-luck-multi').value   = G.luckMulti;
 }
 
-} // end startApp()
+function applyAdminSelf() {
+    const m = parseInt(document.getElementById('adm-money').value);
+    const b = parseInt(document.getElementById('adm-balls').value);
+    if (!isNaN(m)) money=m;
+    if (!isNaN(b)) balls=b;
+    updateUI(); alert('書き換えた！');
+}
+
+function distributeGift() {
+    const m = parseInt(document.getElementById('adm-dist-money').value)||0;
+    const b = parseInt(document.getElementById('adm-dist-balls').value)||0;
+    if (!m&&!b) return alert('金額か玉数を入れてくれ');
+    db.ref('users').once('value', snap => {
+        snap.forEach(u => db.ref('gifts/'+u.key).push({money:m, balls:b}));
+        alert(`配布完了！ $${m.toLocaleString()} + ${b}玉`);
+    });
+}
+
+function postNews() {
+    const msg = document.getElementById('adm-news-input').value.trim();
+    if (!msg) return alert('内容を入れてくれ');
+    db.ref('system/news').once('value', snap => {
+        const existing = (snap.val()&&snap.val().messages) ? snap.val().messages : [];
+        const updated = [{text:msg, timestamp:Date.now()}, ...existing].slice(0,5);
+        db.ref('system/news').set({messages:updated});
+        document.getElementById('adm-news-input').value = '';
+        alert('投稿完了！');
+    });
+}
+
+function clearNews() {
+    db.ref('system/news').set({messages:[]});
+    alert('ニュースをクリアした');
+}
+
+function applyPayouts() {
+    const settings = {
+        kakuhen_prob: parseFloat(document.getElementById('adm-kakuhen-prob').value)/100,
+        normal_prob:  parseFloat(document.getElementById('adm-normal-prob').value)/100,
+        gold_prob:    parseFloat(document.getElementById('adm-gold-prob').value)/100,
+        silver_rate:  parseInt(document.getElementById('adm-silver-rate').value),
+        gold_rate:    parseInt(document.getElementById('adm-gold-rate').value),
+        luck_multi:   G.luckMulti
+    };
+    db.ref('system/settings').set(settings);
+    alert('配当を全員に反映した！');
+}
+
+let _lastEventTitle = null;
+let _eventClearTimer = null;
+
+function renderEventPanel(d) {
+    const el = document.getElementById('event-panel');
+    const section = el ? el.closest('.panel-section') : null;
+    if (!el) return;
+
+    if (!d || !d.title) {
+        el.innerHTML = '<div class="no-event" style="color:#444;font-style:italic;">現在開催中のイベントはないぞ</div>';
+        if (section) section.classList.remove('event-active');
+        return;
+    }
+
+    const current = d.current || 0;
+    const goal    = d.goal || 1;
+    const pct     = Math.min(current / goal * 100, 100).toFixed(1);
+    const done    = current >= goal;
+
+    // 新イベント開始トースト
+    if (_lastEventTitle !== d.title) {
+        _lastEventTitle = d.title;
+        if (!done) toast(`🎉 イベント開始！「${d.title}」目標: $${goal.toLocaleString()}`, '#f55', 4000);
+    }
+
+    // パネルを光らせる
+    if (section) section.classList.toggle('event-active', !done);
+
+    el.innerHTML = `
+        <div class="event-title" style="font-size:13px;margin-bottom:6px;">🎉 ${d.title}</div>
+        ${done
+            ? `<div class="event-complete">🏆 目標達成！おめでとう！</div>`
+            : `<div class="event-progress-wrap"><div class="event-progress-bar" style="width:${pct}%"></div></div>`
+        }
+        <div class="event-amount" style="margin-top:5px;">
+            <span>💰 $${current.toLocaleString()}</span>
+            <span>🎯 $${goal.toLocaleString()}</span>
+        </div>
+        <div style="text-align:center;color:#ff0;font-size:10px;margin-top:4px;">${pct}% 達成${d.bonus ? ` ／ ボーナス: $${parseInt(d.bonus).toLocaleString()}` : ''}</div>
+    `;
+
+    // 達成後30秒でFirebaseから自動削除
+    if (done) {
+        if (section) section.classList.remove('event-active');
+        if (_eventClearTimer) clearTimeout(_eventClearTimer);
+        _eventClearTimer = setTimeout(() => {
+            db.ref('system/event').remove();
+            _eventClearTimer = null;
+        }, 30000);
+    }
+}
+
+function postEvent() {
+    const title = document.getElementById('adm-event-title').value.trim();
+    const goal  = parseInt(document.getElementById('adm-event-goal').value);
+    const bonus = parseInt(document.getElementById('adm-event-bonus').value) || 0;
+    if (!title) return alert('イベント名を入れてくれ');
+    if (isNaN(goal) || goal <= 0) return alert('目標金額を入れてくれ');
+    db.ref('system/event').set({title, goal, bonus, current: 0, timestamp: Date.now()});
+    document.getElementById('adm-event-title').value = '';
+    document.getElementById('adm-event-goal').value  = '';
+    document.getElementById('adm-event-bonus').value = '';
+    alert(`イベント「${title}」開始！`);
+}
+
+function clearEvent() {
+    if (!confirm('イベントを終了する？')) return;
+    db.ref('system/event').remove();
+    alert('イベントを終了した');
+}
+
+function applyLuckMulti() {
+    const lm = parseFloat(document.getElementById('adm-luck-multi').value);
+    if (isNaN(lm)||lm<0) return alert('正しい値を入れてくれ');
+    db.ref('system/settings').update({luck_multi:lm});
+    alert(`ラックマルチ x${lm} を全員に反映した！`);
+}
+
+function onLogin(user) {
+    currentUser = user;
+    initData();
+    if (debt>0) {
+        const interest = Math.floor(debt*0.10);
+        debt+=interest;
+        setTimeout(() => toast(`💀 利息 +$${interest.toLocaleString()} 加算！ 残債: $${debt.toLocaleString()}`, '#f44', 3000), 1000);
+    }
+    document.getElementById('login-screen').style.display      = 'none';
+    document.getElementById('pachinko-container').style.display = 'flex';
+    document.getElementById('news-bar').style.display          = 'flex';
+    updateUI();
+    setupCanvas();
+    draw();
+    setTimeout(updateRanking, 600);
+    listenGifts();
+}
+
+// ===== Firebase初期化＆起動 =====
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src=src; s.onload=resolve; s.onerror=reject;
+        document.head.appendChild(s);
+    });
+}
+
+async function startApp() {
+    await loadScript('https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js');
+    await loadScript('https://www.gstatic.com/firebasejs/9.1.3/firebase-auth-compat.js');
+    await loadScript('https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js');
+    firebase.initializeApp(firebaseConfig);
+    auth = firebase.auth();
+    db   = firebase.database();
+
+    // Firebaseリアルタイムリスナー
+    db.ref('system/settings').on('value', snap => {
+        const d = snap.val() || {};
+        if (d.kakuhen_prob !== undefined) G.kakuhenProb = d.kakuhen_prob;
+        if (d.normal_prob  !== undefined) G.normalProb  = d.normal_prob;
+        if (d.gold_prob    !== undefined) G.goldProb    = d.gold_prob;
+        if (d.silver_rate  !== undefined) G.silverRate  = d.silver_rate;
+        if (d.gold_rate    !== undefined) G.goldRate    = d.gold_rate;
+        if (d.luck_multi   !== undefined) G.luckMulti   = d.luck_multi;
+        if (currentUser) updateUI();
+    });
+    db.ref('system/event').on('value', snap => {
+        renderEventPanel(snap.val());
+    });
+
+    db.ref('system/news').on('value', snap => {
+        const data = snap.val();
+        updateTicker((data&&data.messages) ? data.messages : []);
+    });
+
+    // ログイン状態監視
+    auth.onAuthStateChanged(user => { if (user) onLogin(user); });
+
+    // ログインボタン
+    document.getElementById('google-login-btn').addEventListener('click', () => {
+        auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(r => onLogin(r.user));
+    });
+
+    // 動的要素のイベント委譲
+    document.addEventListener('click', e => {
+        const el = e.target.closest('[data-action]');
+        if (!el) return;
+        const action = el.dataset.action;
+        if (action==='item')  itemAction(el.dataset.id, parseInt(el.dataset.price), el.dataset.type);
+        if (action==='loan')  takeLoan(el.dataset.id);
+        if (action==='claim') claimMission(el.dataset.id, parseInt(el.dataset.rm), parseInt(el.dataset.rb));
+    });
+
+    // 静的ボタンのバインド
+    const b = (id, fn) => { const el=document.getElementById(id); if(el) el.addEventListener('click', fn); };
+    b('btn-buy-balls',   () => buyBalls());
+    b('btn-custom-loan', () => takeCustomLoan());
+    b('btn-repay',       () => repayDebt(false));
+    b('btn-repay-all',   () => repayDebt(true));
+    b('btn-ex-bronze',   () => exchangeSingle('bronze'));
+    b('btn-ex-silver',   () => exchangeSingle('silver'));
+    b('btn-ex-gold',     () => exchangeSingle('gold'));
+    b('btn-gift',        () => openModal('gift-modal'));
+    b('btn-ad',          () => watchAd());
+    b('btn-admin',       () => openModal('admin-modal'));
+    b('btn-reset',       () => softReset());
+    b('btn-close-gift',  () => closeModal('gift-modal'));
+    b('ad-watch-btn',    () => startAdWatch());
+    b('btn-close-ad',    () => closeAdModal());
+    b('btn-auth-admin',  () => authAdmin());
+    b('btn-adm-self',    () => applyAdminSelf());
+    b('btn-adm-dist',    () => distributeGift());
+    b('btn-adm-news',    () => postNews());
+    b('btn-adm-clear',   () => clearNews());
+    b('btn-adm-payouts', () => applyPayouts());
+    b('btn-adm-luck',    () => applyLuckMulti());
+    b('btn-close-admin',      () => closeModal('admin-modal'));
+    b('btn-adm-event-post',  () => postEvent());
+    b('btn-adm-event-clear', () => clearEvent());
+}
+
+startApp();
 </script>
 </body>
 </html>
