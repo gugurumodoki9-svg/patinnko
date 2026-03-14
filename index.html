@@ -117,6 +117,11 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
 .event-title { font-weight:bold; color:#f88; margin-bottom:4px; font-size:12px; }
 .event-amount { display:flex; justify-content:space-between; color:#aaa; margin-top:4px; }
 .event-complete { text-align:center; color:#ff0; font-weight:bold; font-size:13px; animation:kakuhen-flash 0.8s infinite; }
+.history-badge { border-radius:4px; padding:3px 7px; font-size:10px; font-weight:bold; }
+.history-badge.hit-gold { background:#ffd700; color:#000; }
+.history-badge.hit-silver { background:#aaa; color:#000; }
+.history-badge.hit-bronze { background:#cd7f32; color:#fff; }
+.history-badge.miss { background:#222; color:#555; border:1px solid #333; }
 .event-active { border:2px solid #f55 !important; box-shadow:0 0 12px rgba(255,85,85,0.5); animation:event-glow 1.5s ease-in-out infinite; }
 @keyframes event-glow { 0%,100%{box-shadow:0 0 8px rgba(255,85,85,0.4)} 50%{box-shadow:0 0 18px rgba(255,85,85,0.8)} }
 </style>
@@ -170,6 +175,11 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
                     <button id="btn-repay" style="background:#f44;color:#fff;">返済</button>
                     <button id="btn-repay-all" style="background:#900;color:#fff;">全額</button>
                 </div>
+            </div>
+            <!-- 直近履歴 -->
+            <div id="history-panel" style="margin-top:8px;background:#111;border:1px solid #333;border-radius:8px;padding:8px;">
+                <div style="font-size:10px;color:#888;letter-spacing:1px;margin-bottom:6px;text-align:center;">📋 直近の履歴</div>
+                <div id="history-list" style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;"></div>
             </div>
         </div>
 
@@ -355,6 +365,27 @@ let stock = 0, isSpinning = false, isKakuhen = false;
 let currentUser = null;
 let activeBalls = [], pegs = [];
 let adTimer = null;
+let matchHistory = [];
+
+function addHistory(type) {
+    // type: 'gold' | 'silver' | 'bronze' | 'miss'
+    matchHistory.unshift(type);
+    if (matchHistory.length > 20) matchHistory.pop();
+    renderHistory();
+}
+
+function renderHistory() {
+    const el = document.getElementById('history-list');
+    if (!el) return;
+    if (matchHistory.length === 0) {
+        el.innerHTML = '<span style="color:#444;font-size:10px;">まだ記録なし</span>';
+        return;
+    }
+    const labels = { gold:'🥇確変', silver:'🥈通常', bronze:'🥉ボーナス', miss:'❌外れ' };
+    el.innerHTML = matchHistory.map(t =>
+        `<span class="history-badge hit-${t==='miss'?'':t} ${t==='miss'?'miss':''}">${labels[t]}</span>`
+    ).join('');
+}
 
 let G = { kakuhenProb:0.45, normalProb:0.08, goldProb:0.30, silverRate:500, goldRate:2000, luckMulti:1 };
 
@@ -661,14 +692,18 @@ function checkWin() {
         if (Math.random() < G.goldProb) {
             applyLuckBonus(G.goldRate);
             inventory.gold++; isKakuhen=true; comboCount++;
+            addHistory('gold');
         } else {
             applyLuckBonus(G.silverRate);
             inventory.silver++; isKakuhen=false; comboCount=0;
+            addHistory('silver');
         }
     } else if (document.getElementById('s1').innerText === document.getElementById('s2').innerText) {
         inventory.bronze++;
+        addHistory('bronze');
     } else {
         comboCount = 0;
+        addHistory('miss');
     }
     isSpinning=false; stock--; updateUI();
     if (stock>0) setTimeout(startSlot, 300);
