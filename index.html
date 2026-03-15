@@ -118,6 +118,12 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
 .event-amount { display:flex; justify-content:space-between; color:#aaa; margin-top:4px; }
 .event-complete { text-align:center; color:#ff0; font-weight:bold; font-size:13px; animation:kakuhen-flash 0.8s infinite; }
 .history-badge { border-radius:4px; padding:2px 5px; font-size:9px; font-weight:bold; flex-shrink:0; }
+@keyframes slot-hit-gold { 0%{box-shadow:0 0 0px #ffd700} 50%{box-shadow:0 0 24px #ffd700, inset 0 0 12px rgba(255,215,0,0.3)} 100%{box-shadow:0 0 0px #ffd700} }
+@keyframes slot-hit-silver { 0%{box-shadow:0 0 0px #aaa} 50%{box-shadow:0 0 18px #aaa, inset 0 0 8px rgba(200,200,200,0.3)} 100%{box-shadow:0 0 0px #aaa} }
+@keyframes sym-bounce { 0%,100%{transform:scale(1)} 40%{transform:scale(1.35)} 70%{transform:scale(0.95)} }
+.slot-win-gold { animation: slot-hit-gold 0.6s ease-in-out 3; border-color:#ffd700 !important; }
+.slot-win-silver { animation: slot-hit-silver 0.6s ease-in-out 3; border-color:#aaa !important; }
+.sym-bounce { display:inline-block; animation: sym-bounce 0.5s ease; }
 .history-badge.hit-gold { background:#ffd700; color:#000; }
 .history-badge.hit-silver { background:#aaa; color:#000; }
 .history-badge.hit-bronze { background:#cd7f32; color:#fff; }
@@ -373,6 +379,24 @@ function addHistory(type) {
     matchHistory.unshift(type);
     if (matchHistory.length > 15) matchHistory.pop();
     renderHistory();
+}
+
+function slotWinEffect(type) {
+    const sc = document.getElementById('slot-container');
+    const cls = type === 'gold' ? 'slot-win-gold' : 'slot-win-silver';
+    sc.classList.add(cls);
+    // シンボルをバウンド
+    ['s1','s2','s3'].forEach((id, i) => {
+        setTimeout(() => {
+            const el = document.getElementById(id);
+            el.classList.remove('sym-bounce');
+            el.offsetWidth; // reflow
+            el.classList.add('sym-bounce');
+            setTimeout(() => el.classList.remove('sym-bounce'), 500);
+        }, i * 120);
+    });
+    // クラス除去
+    setTimeout(() => sc.classList.remove(cls), 1900);
 }
 
 function renderHistory() {
@@ -702,10 +726,12 @@ function checkWin() {
             inventory.gold++; isKakuhen=true; comboCount++;
             maxCombo = Math.max(maxCombo, comboCount);
             addHistory('gold');
+            slotWinEffect('gold');
         } else {
             applyLuckBonus(G.silverRate);
             inventory.silver++; isKakuhen=false; comboCount=0;
             addHistory('silver');
+            slotWinEffect('silver');
         }
     } else if (twoMatch) {
         // 2つ揃い → 銅景品
