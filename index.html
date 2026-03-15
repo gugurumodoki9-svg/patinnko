@@ -382,7 +382,7 @@ function renderHistory() {
         el.innerHTML = '<span style="color:#444;font-size:10px;">まだ記録なし</span>';
         return;
     }
-    const labels = { gold:'🥇', silver:'🥈', bronze:'🥉', miss:'❌️' };
+    const labels = { gold:'🥇', silver:'🥈', bronze:'🥉', miss:'×' };
     el.innerHTML = matchHistory.map(t =>
         `<span class="history-badge ${t==='miss'?'miss':'hit-'+t}">${labels[t]}</span>`
     ).join('');
@@ -696,22 +696,16 @@ function checkWin() {
     const twoMatch = !allMatch && (s1 === s2 || s2 === s3);
 
     if (allMatch) {
-        // 3つ揃い → 確変/通常大当たり
-        const prob = isKakuhen ? G.kakuhenProb : G.normalProb;
-        if (Math.random() < prob) {
-            if (Math.random() < G.goldProb) {
-                applyLuckBonus(G.goldRate);
-                inventory.gold++; isKakuhen=true; comboCount++;
-                maxCombo = Math.max(maxCombo, comboCount);
-                addHistory('gold');
-            } else {
-                applyLuckBonus(G.silverRate);
-                inventory.silver++; isKakuhen=false; comboCount=0;
-                addHistory('silver');
-            }
+        // 3つ揃い → 必ず大当たり（金/銀は確率で分岐）
+        if (Math.random() < G.goldProb) {
+            applyLuckBonus(G.goldRate);
+            inventory.gold++; isKakuhen=true; comboCount++;
+            maxCombo = Math.max(maxCombo, comboCount);
+            addHistory('gold');
         } else {
-            comboCount = 0; isKakuhen = false;
-            addHistory('miss');
+            applyLuckBonus(G.silverRate);
+            inventory.silver++; isKakuhen=false; comboCount=0;
+            addHistory('silver');
         }
     } else if (twoMatch) {
         // 2つ揃い → 銅景品
