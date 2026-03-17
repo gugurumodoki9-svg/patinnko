@@ -406,7 +406,7 @@ function renderHistory() {
         el.innerHTML = '<span style="color:#444;font-size:10px;">まだ記録なし</span>';
         return;
     }
-    const labels = { gold:'🥇', silver:'🥈', bronze:'🥉', miss:'❌️' };
+    const labels = { gold:'🥇', silver:'🥈', bronze:'🥉', miss:'×' };
     el.innerHTML = matchHistory.map(t =>
         `<span class="history-badge ${t==='miss'?'miss':'hit-'+t}">${labels[t]}</span>`
     ).join('');
@@ -685,10 +685,10 @@ function draw() {
     ctx.strokeRect(cX,315,catcherW,15);
     for (let i=0; i<activeBalls.length; i++) {
         let b = activeBalls[i];
-        b.vy += 0.22; b.x += b.vx; b.y += b.vy;
+        b.vy += 0.09; b.x += b.vx * 0.6; b.y += b.vy * 0.6;
         pegs.forEach(p => {
             const dx=b.x-p.x, dy=b.y-p.y, d=Math.sqrt(dx*dx+dy*dy);
-            if (d<7) { const a=Math.atan2(dy,dx); b.vx=Math.cos(a)*1.8; b.vy=Math.sin(a)*1.8; }
+            if (d<7) { const a=Math.atan2(dy,dx); b.vx=Math.cos(a)*1.2; b.vy=Math.sin(a)*1.2; }
         });
         outHoles.forEach(h => { if(b.x>h.x&&b.x<h.x+h.w&&b.y>h.y&&b.y<h.y+h.h){activeBalls.splice(i,1);i--;} });
         if (b && b.y>315 && b.x>cX && b.x<cX+catcherW) {
