@@ -1,13 +1,15 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎰</text></svg>">
 <title>超インフレ・パチンコ【THE FINAL】</title>
 
 <style>
 * { box-sizing: border-box; }
-body { background:#050505; color:#fff; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; padding:20px; margin:0; min-height:100vh; }
+body { background:#050505; color:#fff; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; padding:20px; margin:0; min-height:100vh; overflow-x:hidden; }
 
 /* ログイン */
 #login-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; gap:20px; }
@@ -18,7 +20,7 @@ body { background:#050505; color:#fff; font-family:sans-serif; display:flex; fle
 #game-main { display:flex; gap:20px; align-items:flex-start; }
 
 /* 筐体 */
-#pachinko-machine { background:#151515; border:6px solid #333; border-radius:20px; padding:15px; width:330px; flex-shrink:0; }
+#pachinko-machine { background:#151515; border:6px solid #333; border-radius:20px; padding:15px; width:330px; flex-shrink:0; max-width:100%; }
 #kakuhen-lamp { text-align:center; font-weight:bold; padding:4px; margin-bottom:6px; border-radius:4px; background:#111; }
 .kakuhen-mode #kakuhen-lamp { background:#f00; animation:kakuhen-flash 0.5s infinite; }
 @keyframes kakuhen-flash { 0%,100%{opacity:1} 50%{opacity:0.5} }
@@ -130,6 +132,28 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
 .history-badge.miss { background:#222; color:#555; border:1px solid #333; }
 .event-active { border:2px solid #f55 !important; box-shadow:0 0 12px rgba(255,85,85,0.5); animation:event-glow 1.5s ease-in-out infinite; }
 @keyframes event-glow { 0%,100%{box-shadow:0 0 8px rgba(255,85,85,0.4)} 50%{box-shadow:0 0 18px rgba(255,85,85,0.8)} }
+
+/* ===== レスポンシブ ===== */
+@media (max-width: 900px) {
+    body { padding: 8px; }
+    #pachinko-container { width: 100%; }
+    #game-main { flex-direction: column; align-items: center; gap: 12px; }
+    #pachinko-machine { width: 100%; max-width: 420px; }
+    #side-panel { width: 100%; max-width: 420px; align-self: center; }
+    .side-flex { flex-direction: column; }
+    .side-left, .side-right { width: 100%; }
+    canvas { width: 100% !important; max-width: 300px; }
+    .shop-scroll { max-height: 220px; }
+    .mission-box { height: 200px; }
+    .ranking-box { height: 80px; }
+}
+@media (max-width: 480px) {
+    #pachinko-machine { max-width: 100%; }
+    #side-panel { max-width: 100%; padding: 10px; }
+    .ex-btn { height: 42px; font-size: 11px; }
+    .bottom-btns button { padding: 9px 4px; font-size: 11px; }
+    .adm-grid { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
