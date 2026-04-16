@@ -11,8 +11,18 @@
 body { background:#050505; color:#fff; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; padding:20px; margin:0; min-height:100vh; overflow-x:hidden; }
 
 /* ログイン */
-#login-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; gap:20px; }
+#login-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; gap:16px; }
 .login-btn-fancy { background:#fff; color:#757575; border:none; padding:12px 24px; font-size:16px; font-weight:bold; border-radius:4px; display:flex; align-items:center; gap:12px; cursor:pointer; }
+#login-box { background:#111; border:2px solid #333; border-radius:12px; padding:20px; width:300px; display:flex; flex-direction:column; gap:10px; }
+#login-box input { background:#000; color:#fff; border:1px solid #444; padding:10px; border-radius:6px; font-size:14px; width:100%; box-sizing:border-box; }
+#login-box input::placeholder { color:#555; }
+.login-tab-wrap { display:flex; gap:4px; }
+.login-tab { flex:1; padding:8px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:13px; background:#222; color:#888; }
+.login-tab.active { background:#0ff; color:#000; }
+#login-error { color:#f44; font-size:11px; text-align:center; min-height:16px; }
+.login-submit-btn { padding:12px; border:none; border-radius:6px; font-size:15px; font-weight:bold; cursor:pointer; background:linear-gradient(#0cf,#007); color:#fff; }
+.login-divider { display:flex; align-items:center; gap:8px; color:#333; font-size:12px; }
+.login-divider::before,.login-divider::after { content:''; flex:1; height:1px; background:#333; }
 
 /* ゲームコンテナ */
 #pachinko-container { display:none; width:100%; max-width:1100px; flex-direction:column; gap:12px; }
@@ -161,6 +171,20 @@ canvas { background:#000; display:block; margin:0 auto; border:2px solid #222; b
 <div id="login-screen">
     <h1>💀 超インフレ・パチンコ</h1>
     <p>最後の一玉まで、遊び尽くせ。</p>
+
+    <div id="login-box">
+        <div class="login-tab-wrap">
+            <button class="login-tab active" id="tab-login" onclick="switchTab('login')">ログイン</button>
+            <button class="login-tab" id="tab-register" onclick="switchTab('register')">新規登録</button>
+        </div>
+        <input type="text" id="login-username" placeholder="ユーザー名" maxlength="20" autocomplete="username">
+        <input type="password" id="login-password" placeholder="パスワード" autocomplete="current-password">
+        <div id="login-error"></div>
+        <button class="login-submit-btn" id="btn-submit-login">ログイン</button>
+    </div>
+
+    <div class="login-divider" style="width:300px;">または</div>
+
     <button id="google-login-btn" class="login-btn-fancy">
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G" width="20">
         Googleでログイン
@@ -443,7 +467,7 @@ const ITEMS = {
         {id:'t-magnet',  name:'🧲 磁力チャッカー', price:50000,     desc:'キャッチャー幅2倍（紫色）'},
         {id:'t-twin',    name:'⚔️ ツイン発射',   price:500000,    desc:'2発同時発射'},
         {id:'t-triple',  name:'🔱 ストックMAX',  price:2000000,   desc:'ストック上限4→8に拡張'},
-        {id:'t-gravity', name:'🌌 重力崩壊',     price:10000000,  desc:'金景品の換金額が3倍'}
+        {id:'t-gravity', name:'🌌 重力崩壊',     price:10000000,  desc:'全景品の換金額が2倍'}
     ],
     skins: [
         {id:'s-def',    name:'📱 標準',   price:0,         bg:'#000', pin:'#ddd'},
@@ -538,7 +562,11 @@ function saveData() {
     localStorage.setItem('p_combo',  comboCount);
     localStorage.setItem('p_shots',  totalShots);
     if (currentUser) {
-        db.ref('users/' + currentUser.uid).set({name: currentUser.displayName, money});
+        // ランキング用: 表示名をDBから取得して登録
+        db.ref('usernames/' + currentUser.uid).once('value', snap => {
+            const name = snap.val() || currentUser.displayName || 'Player';
+            db.ref('users/' + currentUser.uid).set({name, money});
+        });
         // 発射数差分をサーバーに加算
         const prevShots = parseInt(localStorage.getItem('p_shots_synced') || '0');
         const diff = totalShots - prevShots;
@@ -697,9 +725,9 @@ function draw() {
     const ctx = canvas.getContext('2d');
     const skin = ITEMS.skins.find(s=>s.id===activeSkin) || ITEMS.skins[0];
     ctx.fillStyle = skin.bg; ctx.fillRect(0,0,300,340);
-    outHoles.forEach(h => { ctx.fillStyle='#300'; ctx.fillRect(h.x,h.y,h.w,h.h); });
+    outHoles.forEach(h => { ctx.fillStyle='#662222'; ctx.fillRect(h.x,h.y,h.w,h.h); });
     pegs.forEach(p => {
-        ctx.fillStyle = p.type==='rail' ? '#444' : skin.pin;
+        ctx.fillStyle = p.type==='rail' ? skin.pin : skin.pin;
         ctx.beginPath(); ctx.arc(p.x,p.y,p.type==='rail'?1.2:2,0,7); ctx.fill();
     });
     const catcherW = equippedTool==='t-magnet' ? 60 : 30;
@@ -812,8 +840,8 @@ function buyBalls() {
 }
 
 function exchangeSingle(type) {
-    const goldMult = equippedTool==='t-gravity' ? 3 : 1;
-    const rate = type==='gold' ? G.goldRate*goldMult : type==='silver' ? G.silverRate : 100;
+    const gravMult = equippedTool==='t-gravity' ? 2 : 1;
+    const rate = type==='gold' ? G.goldRate*gravMult : type==='silver' ? G.silverRate*gravMult : 100*gravMult;
     if (inventory[type]<=0) return;
     const earned = inventory[type] * rate;
     money += earned;
@@ -1180,9 +1208,77 @@ async function startApp() {
     // ログイン状態監視
     auth.onAuthStateChanged(user => { if (user) onLogin(user); });
 
-    // ログインボタン
+    // Googleログイン
     document.getElementById('google-login-btn').addEventListener('click', () => {
-        auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(r => onLogin(r.user));
+        auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
+            .then(r => {
+                // Googleユーザーの名前をDBに保存（ランキング用）
+                const u = r.user;
+                const name = u.displayName || 'Googleユーザー';
+                db.ref('usernames/' + u.uid).set(name);
+                onLogin(u);
+            })
+            .catch(e => showLoginError('Googleログイン失敗: ' + e.message));
+    });
+
+    // ユーザー名+パスワード ログイン/登録
+    let loginMode = 'login';
+    window.switchTab = function(mode) {
+        loginMode = mode;
+        document.getElementById('tab-login').className    = 'login-tab' + (mode==='login'    ? ' active' : '');
+        document.getElementById('tab-register').className = 'login-tab' + (mode==='register' ? ' active' : '');
+        document.getElementById('btn-submit-login').textContent = mode==='login' ? 'ログイン' : '新規登録';
+        showLoginError('');
+    };
+    window.showLoginError = function(msg) {
+        document.getElementById('login-error').textContent = msg;
+    };
+
+    document.getElementById('btn-submit-login').addEventListener('click', async () => {
+        const username = document.getElementById('login-username').value.trim();
+        const password = document.getElementById('login-password').value;
+        if (!username) return showLoginError('ユーザー名を入力してください');
+        if (username.length < 2) return showLoginError('ユーザー名は2文字以上にしてください');
+        if (!/^[a-zA-Z0-9ぁ-んァ-ン一-龥ー_\-]+$/.test(username)) return showLoginError('使えない文字が含まれています');
+        if (password.length < 6) return showLoginError('パスワードは6文字以上にしてください');
+
+        const fakeEmail = username.toLowerCase().replace(/[^a-z0-9]/g, '_') + '@pachinko.local';
+
+        if (loginMode === 'login') {
+            try {
+                const r = await auth.signInWithEmailAndPassword(fakeEmail, password);
+                // 表示名を更新（DBに保存されたユーザー名を使う）
+                onLogin(r.user);
+            } catch(e) {
+                if (e.code === 'auth/user-not-found') showLoginError('ユーザーが見つかりません。新規登録してください');
+                else if (e.code === 'auth/wrong-password') showLoginError('パスワードが違います');
+                else showLoginError('ログイン失敗: ' + e.message);
+            }
+        } else {
+            // 登録前にユーザー名の重複チェック
+            try {
+                const snap = await db.ref('usernameMap/' + username.toLowerCase()).once('value');
+                if (snap.exists()) return showLoginError('そのユーザー名はすでに使われています');
+                const r = await auth.createUserWithEmailAndPassword(fakeEmail, password);
+                // 表示名セット
+                await r.user.updateProfile({ displayName: username });
+                // ユーザー名マップ＆ランキング用DB登録
+                await db.ref('usernameMap/' + username.toLowerCase()).set(r.user.uid);
+                await db.ref('usernames/' + r.user.uid).set(username);
+                toast(`🎉 ようこそ、${username}！`, '#0ff', 3000);
+                onLogin(r.user);
+            } catch(e) {
+                if (e.code === 'auth/email-already-in-use') showLoginError('そのユーザー名はすでに使われています');
+                else showLoginError('登録失敗: ' + e.message);
+            }
+        }
+    });
+
+    // Enterキー対応
+    ['login-username','login-password'].forEach(id => {
+        document.getElementById(id).addEventListener('keydown', e => {
+            if (e.key === 'Enter') document.getElementById('btn-submit-login').click();
+        });
     });
 
     // 動的要素のイベント委譲
