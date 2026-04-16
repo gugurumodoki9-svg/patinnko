@@ -704,9 +704,15 @@ function setupCanvas() {
         const off = (Math.floor(y/30)%2===0) ? 15 : 0;
         for (let x=30; x<280; x+=30) pegs.push({x:x+off, y, type:'pin'});
     }
+    // レール座標を保存（描画はdraw関数で線として描く）
+    window.rails = [
+        {x1:0, y1:260, x2:110, y2:315},
+        {x1:300, y1:260, x2:190, y2:315}
+    ];
+    // レール上の釘は残す（当たり判定用）
     const addRail = (x1,y1,x2,y2) => {
         const dist = Math.sqrt((x2-x1)**2+(y2-y1)**2);
-        for (let i=0; i<dist; i+=4) pegs.push({x:x1+(x2-x1)*(i/dist), y:y1+(y2-y1)*(i/dist), type:'rail'});
+        for (let i=0; i<dist; i+=6) pegs.push({x:x1+(x2-x1)*(i/dist), y:y1+(y2-y1)*(i/dist), type:'rail'});
     };
     addRail(0,260,110,315); addRail(300,260,190,315);
     document.getElementById('shootBtn').onclick = () => {
@@ -725,11 +731,33 @@ function draw() {
     const ctx = canvas.getContext('2d');
     const skin = ITEMS.skins.find(s=>s.id===activeSkin) || ITEMS.skins[0];
     ctx.fillStyle = skin.bg; ctx.fillRect(0,0,300,340);
-    outHoles.forEach(h => { ctx.fillStyle='#662222'; ctx.fillRect(h.x,h.y,h.w,h.h); });
-    pegs.forEach(p => {
-        ctx.fillStyle = p.type==='rail' ? skin.pin : skin.pin;
-        ctx.beginPath(); ctx.arc(p.x,p.y,p.type==='rail'?1.2:2,0,7); ctx.fill();
+    // ハズレ穴（見やすく）
+    outHoles.forEach(h => {
+        ctx.fillStyle='#1a0000'; ctx.fillRect(h.x,h.y,h.w,h.h);
+        ctx.strokeStyle='#ff4444'; ctx.lineWidth=2;
+        ctx.strokeRect(h.x,h.y,h.w,h.h);
+        ctx.fillStyle='#ff4444'; ctx.font='bold 8px sans-serif'; ctx.textAlign='center';
+        ctx.fillText('OUT', h.x+h.w/2, h.y+h.h-1);
     });
+    // 釘（レール釘は描画しない）
+    pegs.forEach(p => {
+        if (p.type==='rail') return;
+        ctx.fillStyle = skin.pin;
+        ctx.beginPath(); ctx.arc(p.x,p.y,2,0,7); ctx.fill();
+    });
+    // レールを実線で描画
+    if (window.rails) {
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        window.rails.forEach(r => {
+            const grad = ctx.createLinearGradient(r.x1,r.y1,r.x2,r.y2);
+            grad.addColorStop(0, 'rgba(180,180,180,0.4)');
+            grad.addColorStop(0.5, skin.pin);
+            grad.addColorStop(1, 'rgba(180,180,180,0.4)');
+            ctx.strokeStyle = grad;
+            ctx.beginPath(); ctx.moveTo(r.x1,r.y1); ctx.lineTo(r.x2,r.y2); ctx.stroke();
+        });
+    }
     const catcherW = equippedTool==='t-magnet' ? 60 : 30;
     const cX = 135 + Math.sin(Date.now()/500)*60;
     ctx.strokeStyle = equippedTool==='t-magnet' ? '#f0f' : '#0ff';
