@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -714,6 +713,32 @@ function draw() {
             const dx=b.x-p.x, dy=b.y-p.y, d=Math.sqrt(dx*dx+dy*dy);
             if (d<7) { const a=Math.atan2(dy,dx); b.vx=Math.cos(a)*1.2; b.vy=Math.sin(a)*1.2; }
         });
+        // 玉同士の当たり判定
+        for (let j=i+1; j<activeBalls.length; j++) {
+            const b2 = activeBalls[j];
+            if (!b2) continue;
+            const dx=b.x-b2.x, dy=b.y-b2.y;
+            const d=Math.sqrt(dx*dx+dy*dy);
+            if (d < 8 && d > 0) {
+                const a = Math.atan2(dy, dx);
+                const cos=Math.cos(a), sin=Math.sin(a);
+                // 速度を法線方向で交換（弾性衝突）
+                const v1n = b.vx*cos + b.vy*sin;
+                const v2n = b2.vx*cos + b2.vy*sin;
+                const v1t = -b.vx*sin + b.vy*cos;
+                const v2t = -b2.vx*sin + b2.vy*cos;
+                b.vx  = v2n*cos - v1t*sin;
+                b.vy  = v2n*sin + v1t*cos;
+                b2.vx = v1n*cos - v2t*sin;
+                b2.vy = v1n*sin + v2t*cos;
+                // 重なり解消
+                const overlap = 8 - d;
+                b.x  += cos * overlap * 0.5;
+                b.y  += sin * overlap * 0.5;
+                b2.x -= cos * overlap * 0.5;
+                b2.y -= sin * overlap * 0.5;
+            }
+        }
         outHoles.forEach(h => { if(b.x>h.x&&b.x<h.x+h.w&&b.y>h.y&&b.y<h.y+h.h){activeBalls.splice(i,1);i--;} });
         if (b && b.y>315 && b.x>cX && b.x<cX+catcherW) {
             activeBalls.splice(i,1); i--;
